@@ -7,10 +7,11 @@ const { initUtils, extractXmlFile, downloadFile, uploadFile } = require('../util
 const axios = require('axios');
 const extract = require('extract-zip');
 const AWS = require('aws-sdk');
-const _TMP_DIR = path.resolve(__dirname, 'tmp');
+const _TMP_DIR = path.resolve(__dirname, '..', 'tmp');
 
 /* Init the utils dependencies */
 initUtils(axios, extract, AWS);
+
 
 /**
  * Extracts all the relative patent and sequence files and applications from
@@ -110,6 +111,10 @@ exports.lambdaHandler = async (event, context) => {
     const startTime = Date.now();
     let fileDate;
 
+    /*  Determine if the event is an API event or a CloudWatch 
+        scheduled event. The API events contain the processing 
+        date in the request body but scheduled events will 
+        process the current week's file*/
     if (event.body) {
         const requestBody = JSON.parse(event.body);
         let year = requestBody.year;

@@ -14,7 +14,15 @@ Parameters:
     Description: AWS access key Id.
   AWS_SECRET_ACCESS_KEY:
     Type: String
-    Description: AWS key secret.    
+    Description: AWS key secret.
+  AWS_REGION:
+    Type: String
+    Default: us-east-1
+    Description: The AWS Region.
+  NODE_ENV:
+    Type: String
+    Description: The nodejs Environment.
+    
 
 Resources:
   GrantDocRetrieverFunction:
