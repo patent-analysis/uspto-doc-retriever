@@ -8,16 +8,16 @@ Globals:
     Timeout: 900
 
 Parameters:
-  AWS_ACCESS_KEY_ID:
+  AwsAccessKeyId:
     Type: String
     Description: AWS access key Id.
-  AWS_SECRET_ACCESS_KEY:
+  AwsSecretAccessKey:
     Type: String
     Description: AWS key secret.
-  AWS_REGION:
+  AwsRegion:
     Type: String
     Description: The AWS Region.
-  NODE_ENV:
+  NodeEnv:
     Type: String
     Description: The nodejs Environment.
     
@@ -31,10 +31,10 @@ Resources:
       ImageUri: !Join ['.', [!Ref AWS::AccountId, 'dkr.ecr', !Ref AWS::Region, 'amazonaws.com/', !Ref DocRetrieverRepo]]
       Environment:
         Variables:
-          AWS_ACCESS_KEY_ID: !Ref AWS_ACCESS_KEY_ID
-          AWS_SECRET_ACCESS_KEY: !Ref AWS_SECRET_ACCESS_KEY
-          AWS_REGION: !Ref AWS_REGION
-          NODE_ENV: !Ref NODE_ENV
+          AWS_ACCESS_KEY_ID: !Ref AwsAccessKeyId
+          AWS_SECRET_ACCESS_KEY: !Ref AwsSecretAccessKey
+          AWS_REGION: !Ref AwsRegion
+          NODE_ENV: !Ref NodeEnv
 
       Events:
         DocRetrieverEvent:
@@ -61,10 +61,10 @@ Resources:
       ImageUri: !Join ['.', [!Ref AWS::AccountId, 'dkr.ecr', !Ref AWS::Region, 'amazonaws.com/', !Ref DocRetrieverRepo]]
       Environment:
         Variables:
-          AWS_ACCESS_KEY_ID: !Ref AWS_ACCESS_KEY_ID
-          AWS_SECRET_ACCESS_KEY: !Ref AWS_SECRET_ACCESS_KEY
-          AWS_REGION: !Ref AWS_REGION
-          NODE_ENV: !Ref NODE_ENV
+          AWS_ACCESS_KEY_ID: !Ref AwsAccessKeyId
+          AWS_SECRET_ACCESS_KEY: !Ref AwsSecretAccessKey
+          AWS_REGION: !Ref AwsRegion
+          NODE_ENV: !Ref NodeEnv
       Events:
         DocRetrieverEvent:
           Type: Api
