@@ -27,12 +27,12 @@ jobs:
           node-version: '14'
       - name: Install dependencies
         working-directory: ./
-        run: pwd && ls && make install
+        run: make install
       - name: Lint code
-        working-directory: ./..
+        working-directory: ./
         run: make lint
       - name: Unit Tests
-        working-directory: ./..
+        working-directory: ./
         run: make test
 
   deploy:
@@ -49,9 +49,9 @@ jobs:
           node-version: '14'
       - name: Install dependencies
         run: make install
-        working-directory: ./..
+        working-directory: ./
       - name: Unit Tests
-        working-directory: ./..
+        working-directory: ./
         run: make test
       - name: Configure AWS credentials
         id: credentials
