@@ -8,7 +8,7 @@ const axios = require('axios');
 const extract = require('extract-zip');
 const AWS = require('aws-sdk');
 
-const { initUtils, extractXmlFile, downloadFile, uploadFile } = require('../utils/utils');
+const { initUtils, extractXmlFile, downloadFile, uploadFile } = require('./utils/utils');
 // eslint-disable-next-line no-undef
 const _TMP_DIR = path.resolve(__dirname, '..', 'tmp');
 
