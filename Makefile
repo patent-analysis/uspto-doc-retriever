@@ -24,4 +24,4 @@ build-stack: ## builds the application (docker images)
 	cd ./doc-retriever && sam build
 
 deploy-stack: ## deploy the stack using AWS SAM
-	@echo "done in github actions
+	@echo done in github actions
