@@ -17,7 +17,7 @@ const initUtils = (axiosLib, extractLib, AWSLib) => {
     axios = axiosLib;
     extract = extractLib;
     AWS = AWSLib;
-    s3 = new AWS.S3({ accessKeyId: process.env.AWS_ACCESS_KEY_ID, secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY, region: process.env.AWS_REGION });
+    s3 = new AWS.S3({ accessKeyId: process.env.PSV_AWS_ACCESS_KEY_ID, secretAccessKey: process.env.PSV_AWS_SECRET_ACCESS_KEY, region: process.env.PSV_AWS_REGION });
 }
 
 /**

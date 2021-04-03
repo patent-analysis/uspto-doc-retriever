@@ -31,9 +31,9 @@ Resources:
       ImageUri: !Join ['.', [!Ref AWS::AccountId, 'dkr.ecr', !Ref AWS::Region, 'amazonaws.com/', !Ref DocRetrieverRepo]]
       Environment:
         Variables:
-          AWS_ACCESS_KEY_ID: !Ref AwsAccessKeyId
-          AWS_SECRET_ACCESS_KEY: !Ref AwsSecretAccessKey
-          AWS_REGION: !Ref AwsRegion
+          PSV_AWS_ACCESS_KEY_ID: !Ref AwsAccessKeyId
+          PSV_AWS_SECRET_ACCESS_KEY: !Ref AwsSecretAccessKey
+          PSV_AWS_REGION: !Ref AwsRegion
           NODE_ENV: !Ref NodeEnv
 
       Events:
@@ -61,9 +61,9 @@ Resources:
       ImageUri: !Join ['.', [!Ref AWS::AccountId, 'dkr.ecr', !Ref AWS::Region, 'amazonaws.com/', !Ref DocRetrieverRepo]]
       Environment:
         Variables:
-          AWS_ACCESS_KEY_ID: !Ref AwsAccessKeyId
-          AWS_SECRET_ACCESS_KEY: !Ref AwsSecretAccessKey
-          AWS_REGION: !Ref AwsRegion
+          PSV_AWS_ACCESS_KEY_ID: !Ref AwsAccessKeyId
+          PSV_AWS_SECRET_ACCESS_KEY: !Ref AwsSecretAccessKey
+          PSV_AWS_REGION: !Ref AwsRegion
           NODE_ENV: !Ref NodeEnv
       Events:
         DocRetrieverEvent:
