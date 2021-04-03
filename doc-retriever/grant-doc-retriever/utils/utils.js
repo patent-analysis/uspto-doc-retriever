@@ -36,6 +36,9 @@ const extractXmlFile = async (compressedFileName) => {
  * @param {*} compressedFileName 
  */
 const downloadFile = async (compressedFileName, fileDownloadUrl) => { 
+    // TODO: move this to the end of the process
+    console.log(`Clear tmp dir...`);
+    fs.rmdirSync(_TMP_DIR, { recursive: true });
     console.log(`Downloading USPTO file ${compressedFileName} from URL ${fileDownloadUrl}`);
     const startTime = Date.now();
     console.log('Connecting to the USPTO servers...')
