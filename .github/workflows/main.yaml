@@ -64,8 +64,11 @@ jobs:
       - name: switch back working env
         run: pwd
         working-directory: ./
-      - name: check working dir 2
-        run: pwd && export GITHUB_WORKSPACE = ${{ github.workspace }}/doc-retriever
+      - name: update env
+        run: |
+          export GITHUB_WORKSPACE=${{ github.workspace }}/doc-retriever
+          pwd
+          echo $GITHUB_WORKSPACE
       - name: Configure AWS credentials
         id: credentials
         uses: aws-actions/configure-aws-credentials@v1
