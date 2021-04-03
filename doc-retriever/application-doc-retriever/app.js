@@ -6,6 +6,8 @@ const extract = require('extract-zip');
 const readline = require('readline');
 let response;
 
+// TODO: IMPLEMENT CORRECTLY
+
 async function downloadFile(fileDate) {
     console.log('I am looking for file date', fileDate.format('YYYY-MM-DD'));
 

@@ -28,6 +28,7 @@ Resources:
     CodeUri: ./
     Properties:
       PackageType: Image
+      MemorySize: 10240
       ImageUri: !Join ['.', [!Ref AWS::AccountId, 'dkr.ecr', !Ref AWS::Region, 'amazonaws.com/', !Ref DocRetrieverRepo]]
       Environment:
         Variables:
@@ -57,6 +58,7 @@ Resources:
     Handler: app.lambdaHandler
     CodeUri: ./application-doc-retriever
     Properties:
+      MemorySize: 10240
       PackageType: Image
       ImageUri: !Join ['.', [!Ref AWS::AccountId, 'dkr.ecr', !Ref AWS::Region, 'amazonaws.com/', !Ref DocRetrieverRepo]]
       Environment:
