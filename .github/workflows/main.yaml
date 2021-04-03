@@ -27,7 +27,7 @@ jobs:
           node-version: '14'
       - name: Install dependencies
         working-directory: ./
-        run: make install
+        run: make ci
       - name: Lint code
         working-directory: ./
         run: make lint
@@ -48,7 +48,7 @@ jobs:
         with:
           node-version: '14'
       - name: Install dependencies
-        run: make install
+        run: make ci
         working-directory: ./
       - name: Unit Tests
         working-directory: ./
@@ -60,19 +60,18 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
-      - name: Change directory
-        working-directory: doc-retriever
-        run: echo "changing dir to " && pwd 
       - name: Cloudformation deploy
         uses: aws-actions/aws-cloudformation-github-deploy@v1
         with:
           name: uspto-doc-retriever-stack
-          template: stack-template.yaml
+          template: doc-retriever/stack-template.yaml
           no-fail-on-empty-changeset: "1"
+          working-directory: doc-retriever
       - name: SAM build
         uses: youyo/aws-sam-action/python3.8@v2
         with:
           sam_command: "build --cached --parallel"
+          working-directory: doc-retriever
       - name: SAM package
         uses: youyo/aws-sam-action/python3.8@v2
         with:
@@ -82,6 +81,7 @@ jobs:
         with:
           sam_command: "deploy -t packaged-template.yaml --stack-name uspto-doc-retriever-serverless-stack --region us-east-1 --debug --image-repository 134442622645.dkr.ecr.us-east-1.amazonaws.com/uspto-grants-doc-repository --s3-bucket doc-retriever-stack-bucket --capabilities CAPABILITY_IAM  --no-fail-on-empty-changeset --parameter-overrides --parameter-overrides 'KeyPairName=AWS_ACCESS_KEY_ID AWS_ACCESS_KEY_ID=$(AWS_ACCESS_KEY_ID) KeyPairName=AWS_SECRET_ACCESS_KEY AWS_SECRET_ACCESS_KEY=$(AWS_SECRET_ACCESS_KEY)  KeyPairName=NODE_ENV NODE_ENV=prod  KeyPairName=AWS_REGION AWS_REGION=us-east-1'"
           actions_comment: true
+          working-directory: doc-retriever
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
