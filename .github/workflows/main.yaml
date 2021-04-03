@@ -30,7 +30,7 @@ jobs:
         working-directory: ./..
         run: | 
           pwd
-          make install
+          make -f ./Makefile install
       - name: Lint code
         working-directory: ./..
         run: make lint
