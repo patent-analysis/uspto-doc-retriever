@@ -27,7 +27,7 @@ jobs:
           node-version: '14'
 
       - name: Install dependencies
-        run: pwd && cd .. && pwd && make install
+        run: pwd && cd .. && pwd && ls && make install
       - name: Lint code
         working-directory: ./..
         run: make lint
