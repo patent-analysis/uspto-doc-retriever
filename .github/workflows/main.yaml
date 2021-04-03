@@ -11,6 +11,10 @@ on:
         - '*'
   workflow_dispatch:
 
+defaults:
+  run:
+    working-directory: ./doc-retriever
+
 jobs:
   build:
     name: build step
@@ -23,10 +27,13 @@ jobs:
           node-version: '14'
 
       - name: Install dependencies
+        working-directory: ../
         run: make init
       - name: Lint code
+        working-directory: ../
         run: make lint
       - name: Unit Tests
+        working-directory: ../
         run: make test
 
   deploy:
@@ -43,6 +50,7 @@ jobs:
           node-version: '14'
       - name: Install dependencies
         run: make init
+        working-directory: ../
       - name: Configure AWS credentials
         id: credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -58,12 +66,10 @@ jobs:
           no-fail-on-empty-changeset: "1"
       - name: SAM build
         uses: youyo/aws-sam-action/python3.8@v2
-        working-directory: doc-retriever
         with:
           sam_command: "build --cached --parallel"
       - name: SAM package
         uses: youyo/aws-sam-action/python3.8@v2
-        working-directory: doc-retriever
         with:
           sam_command: "package --output-template-file packaged-template.yaml --debug --region us-east-1 --image-repository 134442622645.dkr.ecr.us-east-1.amazonaws.com/uspto-grants-doc-repository --s3-bucket doc-retriever-stack-bucket" 
       - name: SAM deploy
