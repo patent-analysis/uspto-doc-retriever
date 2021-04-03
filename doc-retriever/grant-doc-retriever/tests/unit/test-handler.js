@@ -17,6 +17,6 @@ sinon.mock(axios);
 describe('lambdaHandler tests', function () {
     it('first test', async () => {
         // TODO: Write real tests
-        assert.equals(1, 1);
+        expect(1).to.eq(1);
     });
 });
