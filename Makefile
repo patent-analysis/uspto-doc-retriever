@@ -1,6 +1,9 @@
 .PHONY: help init clean test validate mock create delete info deploy
 .DEFAULT_GOAL := help
 environment = "inlined"
+LOCAL_ENV :=local
+
+# TODO: Clean this file
 
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
@@ -23,8 +26,8 @@ stack-up: ## run the local aws stack environment
 stack-down: ## stop the local aws stack environment
 	cd ./localstack; docker-compose down
 
-invoke: ## invokes the lambda handler directly
-	node ./doc-retriever/grant-doc-retriever/tests/local/index.js
+invoke: ## invokes the lambda handler directly  ## TODO: may have to change this to export
+	(set NODE_ENV=$(LOCAL_ENV) && node ./doc-retriever/grant-doc-retriever/tests/local/index.js)
 
 run-local: ## build and invoke the lambda function locally
 	@echo "cleaning all stale docker images and containers...."

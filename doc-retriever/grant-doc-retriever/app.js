@@ -1,72 +1,58 @@
-const axios = require('axios')
 const moment = require('moment');
 const fs = require('fs');
 const path = require('path');
-const extract = require('extract-zip');
 const readline = require('readline');
 const convert = require('xml-js');
+const { initUtils, extractXmlFile, downloadFile, uploadFile } = require('../utils/utils');
+const axios = require('axios');
+const extract = require('extract-zip');
 const AWS = require('aws-sdk');
-const s3 = new AWS.S3({accessKeyId: process.env.AWS_ACCESS_KEY_ID, secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY});
-const BUCKET_NAME = 'uspto-bulk-documents'
-let response;
-const tmpDir = path.resolve(__dirname, 'tmp');
+const _TMP_DIR = path.resolve(__dirname, 'tmp');
 
-async function downloadFile(fileDate) {
-    console.log('attempting to download grant file for date', fileDate.format('YYYY-MM-DD'));
-    const GRANTS_FILE_URL = `https://bulkdata.uspto.gov/data/patent/grant/redbook/fulltext/${fileDate.format('YYYY')}/ipg${fileDate.format('YYMMDD')}.zip`
-    console.log('Connecting …')
-    const { data, headers } = await axios({
-        url: GRANTS_FILE_URL,
-        method: 'GET',
-        responseType: 'stream'
-    })
-    console.log('Starting download')
+/* Init the utils dependencies */
+initUtils(axios, extract, AWS);
 
-    if (!fs.existsSync('./tmp')) {
-        fs.mkdirSync('./tmp');
-    }
-    if (!fs.existsSync('./tmp/docs')) {
-        fs.mkdirSync('./tmp/docs');
-    }
-    if (!fs.existsSync('./tmp/seq')) {
-        fs.mkdirSync('./tmp/seq');
-    }
-    const writer = fs.createWriteStream(
-        path.resolve(__dirname, 'tmp', `ipg${fileDate.format('YYMMDD')}.zip`)
-    )
+/**
+ * Extracts all the relative patent and sequence files and applications from
+ * the Bulk XML file
+ * @param {*} xmlFileName 
+ */
+async function processXmlFile(xmlFileName) {
+    const fullFilePath = path.resolve(_TMP_DIR, xmlFileName);
+    console.log(`Processing XML file ${fullFilePath}`);
 
-   
-    data.pipe(writer)
-    return new Promise((resolve, reject) => {
-        writer.on('finish', resolve)
-        writer.on('error', reject)
-    })
-}
-
-
-async function unpackFile(fileDate) {
-    console.log('Extracting the zip file...')
-    const zipFileName = path.resolve(tmpDir, `ipg${fileDate.format('YYMMDD')}.zip`);
-    await extract(zipFileName, { dir: tmpDir })
-    console.log('Extraction complete')
-}
-
-async function processFile() {
-    const fileName = path.resolve(__dirname, 'tmp', `ipg${fileDate.format('YYMMDD')}.xml`);
     const readInterface = readline.createInterface({
-        input: fs.createReadStream(fileName),
+        input: fs.createReadStream(fullFilePath),
         console: false
     });
 
+    readInterface.on('error', function (err) {
+        console.error(`Error occurred while reading XML file stream ${fullFilePath}`, err);
+        throw err;
+    });
+
+    readInterface.on('close', function () {
+        console.log(`Completed reading XML file stream ${fullFilePath}`);
+    });
+
     let xmlString = '';
-    readInterface.on('line', async function (line) {
-        if (line.startsWith('<?xml version=') && xmlString) {
-            var result = convert.xml2json(xmlString, { compact: true, spaces: 0 });
-            result = JSON.parse(result);
+    let linesCount = 0;
+    let parsedDocsCount = 0;
+    let extractedDocsCount = 0;
+    let skippedDocsCount = 0;
+    let extractedSeqDocsCount = 0;
+    for await (const line of readInterface) {
+        linesCount++;
+        if (line.startsWith('<?xml version=') && xmlString != '') {
+            parsedDocsCount++;
+            let result;
             try {
+                result = convert.xml2json(xmlString, { compact: true, spaces: 0 });
+                result = JSON.parse(result);
                 if (result['sequence-cwu']) {
                     const docId = result['sequence-cwu']['publication-reference']['document-id']['doc-number']['_text'].replace(/^0+/, "");
-                    await uploadFile(`seq/${docId}.json`,JSON.stringify(result));
+                    await uploadFile(`seq/${docId}.xml`, xmlString);
+                    extractedSeqDocsCount++;
                 } else {
                     if (result['us-patent-grant']['us-bibliographic-data-grant']['classifications-ipcr']) {
                         let classifications = result['us-patent-grant']['us-bibliographic-data-grant']['classifications-ipcr']['classification-ipcr'];
@@ -78,52 +64,38 @@ async function processFile() {
                         }
                         if (shouldUploadGrantFile) {
                             const docId = result['us-patent-grant']['us-bibliographic-data-grant']['publication-reference']['document-id']['doc-number']['_text'].replace(/^0+/, "");
-                      await uploadFile(`docs/${docId}.json`,JSON.stringify(result));
+                            await uploadFile(`docs/${docId}.xml`, xmlString);
+                            extractedDocsCount++;
+                        } else {
+                            skippedDocsCount++;
                         }
+                    } else {
+                        skippedDocsCount++;
                     }
                 }
             } catch (err) {
-                console.log(err, result['us-patent-grant']['us-bibliographic-data-grant']['classifications-ipcr']);
+                console.log(err, result, xmlString);
+                skippedDocsCount++;
+            } finally {
+                xmlString = ''
             }
-            xmlString = ''
         }
         xmlString += line;
-    });
+    }
 
-    return new Promise((resolve, reject) => {
-        readInterface.on('error', function (err) {
-            console.error(err);
-            reject(err)
-        });
-        readInterface.on('end', function () {
-            console.log('done reading processing the file');
-            resolve()
-        });
-    })
-}
-
-async function uploadFile(key, content){
-    const params = {
-        Bucket: BUCKET_NAME,
-        Key: key, // File name you want to save as in S3
-        Body: content
-    };
-    return new Promise((resolve, reject)=>{
-        s3.upload(params, function(err, data) {
-            if (err) {
-                reject(err);
-                return;
-            }
-            resolve(data.Location);
-        });
-    });
+    console.log(`Completed processing XML file ${fullFilePath}. 
+    Total processed lines: ${linesCount}
+    Total parsed docs: ${parsedDocsCount}
+    Extracted docs: ${extractedDocsCount}
+    Extracted seq docs: ${extractedSeqDocsCount}
+    Skipped docs: ${skippedDocsCount}`);
 }
 
 
 /**
  *
  * Event doc: https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html#api-gateway-simple-proxy-for-lambda-input-format
- * @param {Object} event - API Gateway Lambda Proxy Input Format
+ * @param {Object} event - API Gateway Lambda Proxy Input Format or the cloudwatch event
  *
  * Context doc: https://docs.aws.amazon.com/lambda/latest/dg/nodejs-prog-model-context.html 
  * @param {Object} context
@@ -133,22 +105,30 @@ async function uploadFile(key, content){
  * 
  */
 exports.lambdaHandler = async (event, context) => {
-    console.debug('Handler Invoked with event', event);
-    let processingTime;
+    console.debug('Handling event ', event);
+    console.debug(`Current NODE_ENV = ${process.env.NODE_ENV}`);
+    const startTime = Date.now();
+    let fileDate;
+
     if (event.body) {
         const requestBody = JSON.parse(event.body);
         let year = requestBody.year;
         let week = requestBody.week;
-        processingTime = moment().year(year).isoWeek(0).add(week, 'week').day('Tuesday');
+        fileDate = moment().year(year).isoWeek(0).add(week, 'week').day('Tuesday');
     } else {
-        processingTime = moment().day('Tuesday');
+        fileDate = moment().day('Tuesday');
     }
-    console.log('processing grant files for date', processingTime.toDate());
-    await downloadFile(processingTime);
-    await unpackFile(processingTime);
-    await processFile(processingTime);
-    console.log('completed processing grant file for date', processingTime.toDate());
-    return new Promise((resolve, reject) => {
-        setTimeout(() => resolve(response), 2000)
-    });
+
+    const compressedFileName = `ipg${fileDate.format('YYMMDD')}.zip`;
+    const xmlFileName = `ipg${fileDate.format('YYMMDD')}.xml`;
+    const fileDownloadUrl = `https://bulkdata.uspto.gov/data/patent/grant/redbook/fulltext/${fileDate.format('YYYY')}/ipg${fileDate.format('YYMMDD')}.zip`
+
+    console.log(`Started processing grant file ${compressedFileName} for date ${fileDate.toDate()}`);
+
+    await downloadFile(compressedFileName, fileDownloadUrl);
+    await extractXmlFile(compressedFileName);
+    await processXmlFile(xmlFileName);
+
+    console.log(`Completed processing the grant file ${compressedFileName} for date ${fileDate.toDate()} in ${Date.now() - startTime} ms`);
+    return new Promise((resolve, _) => { resolve('Done') });
 }
