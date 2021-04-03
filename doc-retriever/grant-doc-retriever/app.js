@@ -10,7 +10,7 @@ const AWS = require('aws-sdk');
 
 const { initUtils, extractXmlFile, downloadFile, uploadFile } = require('./utils/utils');
 // eslint-disable-next-line no-undef
-const _TMP_DIR = path.resolve(__dirname, '..', 'tmp');
+const _TMP_DIR = path.resolve('/tmp');
 
 /* Init the utils dependencies */
 initUtils(axios, extract, AWS);

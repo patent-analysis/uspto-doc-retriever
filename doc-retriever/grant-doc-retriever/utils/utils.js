@@ -5,7 +5,7 @@ let extract;
 let axios;
 let s3;
 const BUCKET_NAME = 'uspto-bulk-documents'
-const _TMP_DIR = path.resolve(__dirname, '..','tmp');
+const _TMP_DIR = path.resolve('/tmp');
 
 /**
  * Initializes the Utils dependencies
