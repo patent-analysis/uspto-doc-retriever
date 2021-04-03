@@ -88,16 +88,16 @@ jobs:
       - name: SAM build
         uses: youyo/aws-sam-action/python3.8@v2
         with:
-          sam_command: "build --cached --parallel"
+          sam_command: "build --cached --parallel -t ./doc-retriever/template.yaml"
       - name: SAM package
         uses: youyo/aws-sam-action/python3.8@v2
         with:
-          sam_command: "package --output-template-file packaged-template.yaml --debug --region us-east-1 --image-repository 134442622645.dkr.ecr.us-east-1.amazonaws.com/uspto-grants-doc-repository --s3-bucket doc-retriever-stack-bucket" 
+          sam_command: "package --output-template-file ./doc-retriever/packaged-template.yaml --debug --region us-east-1 --image-repository 134442622645.dkr.ecr.us-east-1.amazonaws.com/uspto-grants-doc-repository --s3-bucket doc-retriever-stack-bucket" 
         
       - name: SAM deploy
         uses: youyo/aws-sam-action/python3.8@v2
         with:
-          sam_command: "deploy -t packaged-template.yaml --stack-name uspto-doc-retriever-serverless-stack --region us-east-1 --debug --image-repository 134442622645.dkr.ecr.us-east-1.amazonaws.com/uspto-grants-doc-repository --s3-bucket doc-retriever-stack-bucket --capabilities CAPABILITY_IAM  --no-fail-on-empty-changeset --parameter-overrides --parameter-overrides 'KeyPairName=AWS_ACCESS_KEY_ID AWS_ACCESS_KEY_ID=$(AWS_ACCESS_KEY_ID) KeyPairName=AWS_SECRET_ACCESS_KEY AWS_SECRET_ACCESS_KEY=$(AWS_SECRET_ACCESS_KEY)  KeyPairName=NODE_ENV NODE_ENV=prod  KeyPairName=AWS_REGION AWS_REGION=us-east-1'"
+          sam_command: "deploy -t ./doc-retriever/packaged-template.yaml --stack-name uspto-doc-retriever-serverless-stack --region us-east-1 --debug --image-repository 134442622645.dkr.ecr.us-east-1.amazonaws.com/uspto-grants-doc-repository --s3-bucket doc-retriever-stack-bucket --capabilities CAPABILITY_IAM  --no-fail-on-empty-changeset --parameter-overrides --parameter-overrides 'KeyPairName=AWS_ACCESS_KEY_ID AWS_ACCESS_KEY_ID=$(AWS_ACCESS_KEY_ID) KeyPairName=AWS_SECRET_ACCESS_KEY AWS_SECRET_ACCESS_KEY=$(AWS_SECRET_ACCESS_KEY)  KeyPairName=NODE_ENV NODE_ENV=prod  KeyPairName=AWS_REGION AWS_REGION=us-east-1'"
           actions_comment: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
