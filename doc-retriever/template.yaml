@@ -78,8 +78,8 @@ Resources:
 
     Metadata:
       DockerTag: app-doc-retriever
-      DockerContext: ./application-doc-retriever/
-      Dockerfile: ../grant-doc-retriever/Dockerfile
+      DockerContext: ./
+      Dockerfile: ./application-doc-retriever/Dockerfile
 
 Outputs:
   GrantDocRetrieverApi:

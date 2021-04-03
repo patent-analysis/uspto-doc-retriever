@@ -1,6 +1,6 @@
 FROM public.ecr.aws/lambda/nodejs:14
 
-COPY app.js ./utils/utils.js package.json package-lock.json ./
+COPY ./application-doc-retriever/app.js ./grant-doc-retriever/utils/utils.js ./grant-doc-retriever/package.json ./grant-doc-retriever/package-lock.json ./
 
 RUN npm install
 
