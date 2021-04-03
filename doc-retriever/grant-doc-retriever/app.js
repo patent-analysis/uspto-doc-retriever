@@ -10,10 +10,15 @@ const AWS = require('aws-sdk');
 
 const { initUtils, extractXmlFile, downloadFile, uploadFile } = require('./utils/utils');
 // eslint-disable-next-line no-undef
-const _TMP_DIR = path.resolve('/tmp');
+const EFS_PATH = path.resolve(process.env.EFS_PATH.trim())
+if (!fs.existsSync(EFS_PATH)) {
+    fs.mkdirSync(EFS_PATH);
+}
+
+const _TMP_DIR = path.resolve(EFS_PATH, Date.now().toString());
 
 /* Init the utils dependencies */
-initUtils(axios, extract, AWS);
+initUtils(axios, extract, AWS, _TMP_DIR);
 
 
 /**
@@ -137,6 +142,9 @@ exports.lambdaHandler = async (event) => {
     await extractXmlFile(compressedFileName);
     await processXmlFile(xmlFileName);
 
+
+    console.log(`delete the tmp dir...`);
+    fs.rmdirSync(_TMP_DIR, { recursive: true });
     console.log(`Completed processing the grant file ${compressedFileName} for date ${fileDate.toDate()} in ${Date.now() - startTime} ms`);
     return new Promise((resolve) => { resolve('Done') });
 }

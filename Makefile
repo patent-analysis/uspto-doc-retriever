@@ -2,6 +2,7 @@
 .DEFAULT_GOAL := help
 environment = "inlined"
 LOCAL_ENV :=local
+TMP_DIR :=tmp
 
 # TODO: Clean this file
 
@@ -18,7 +19,7 @@ test: ## run the unit tests
 	cd ./doc-retriever/grant-doc-retriever/ && npm run test
 
 local-invoke: ## invokes the lambda handler directly on the host machine (local env)
-	(set NODE_ENV=$(LOCAL_ENV) && node ./doc-retriever/grant-doc-retriever/tests/local/index.js)
+	(set NODE_ENV=$(LOCAL_ENV) && set EFS_PATH=$(TMP_DIR) && node ./doc-retriever/grant-doc-retriever/tests/local/index.js)
 			
 build-stack: ## builds the application (docker images)
 	cd ./doc-retriever && sam build

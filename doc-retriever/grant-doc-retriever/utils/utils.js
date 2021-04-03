@@ -4,8 +4,8 @@ let AWS;
 let extract;
 let axios;
 let s3;
+let _TMP_DIR;
 const BUCKET_NAME = 'uspto-bulk-documents'
-const _TMP_DIR = path.resolve('/tmp');
 
 /**
  * Initializes the Utils dependencies
@@ -13,10 +13,11 @@ const _TMP_DIR = path.resolve('/tmp');
  * @param {*} extractLib 
  * @param {*} AWSLib 
  */
-const initUtils = (axiosLib, extractLib, AWSLib) => {
+const initUtils = (axiosLib, extractLib, AWSLib, tmpdir) => {
     axios = axiosLib;
     extract = extractLib;
     AWS = AWSLib;
+    _TMP_DIR = tmpdir;
     s3 = new AWS.S3({ accessKeyId: process.env.PSV_AWS_ACCESS_KEY_ID, secretAccessKey: process.env.PSV_AWS_SECRET_ACCESS_KEY, region: process.env.PSV_AWS_REGION });
 }
 
@@ -36,9 +37,6 @@ const extractXmlFile = async (compressedFileName) => {
  * @param {*} compressedFileName 
  */
 const downloadFile = async (compressedFileName, fileDownloadUrl) => { 
-    // TODO: move this to the end of the process
-    console.log(`Clear tmp dir...`);
-    fs.rmdirSync(_TMP_DIR, { recursive: true });
     console.log(`Downloading USPTO file ${compressedFileName} from URL ${fileDownloadUrl}`);
     const startTime = Date.now();
     console.log('Connecting to the USPTO servers...')

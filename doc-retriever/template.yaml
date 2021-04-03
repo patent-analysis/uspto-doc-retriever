@@ -20,6 +20,9 @@ Parameters:
   NodeEnv:
     Type: String
     Description: The nodejs Environment.
+  EFSpath:
+    Type: String
+    Default: /mnt/efs0
     
 Resources:
   GrantDocRetrieverFunction:
@@ -35,6 +38,7 @@ Resources:
           PSV_AWS_ACCESS_KEY_ID: !Ref AwsAccessKeyId
           PSV_AWS_SECRET_ACCESS_KEY: !Ref AwsSecretAccessKey
           PSV_AWS_REGION: !Ref AwsRegion
+          EFS_PATH: !Ref EFSpath
           NODE_ENV: !Ref NodeEnv
 
       Events:
@@ -47,6 +51,10 @@ Resources:
           Type: Schedule
           Properties:
             Schedule: cron(59 23 ? * 3 *)
+      
+      FileSystemConfigs:
+        - Arn: !GetAtt AccessPointResource.Arn
+          LocalMountPath: !Ref EFSpath
 
     Metadata:
       DockerTag: grant-doc-retriever
