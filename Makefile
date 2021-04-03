@@ -11,9 +11,6 @@ help:
 install: 	## install the nodejs dependencies
 	cd ./doc-retriever && npm install && cd ./grant-doc-retriever/ && npm install
 
-ci:    ## install the nodejs dependencies for the CI environment
-	cd ./doc-retriever && npm ci && cd ./grant-doc-retriever/ && npm ci
-
 lint:	## run the flake8 linter
 	cd ./doc-retriever/grant-doc-retriever/ && npm run lint
 

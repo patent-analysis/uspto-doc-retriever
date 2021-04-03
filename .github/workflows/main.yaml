@@ -27,7 +27,7 @@ jobs:
           node-version: '14'
       - name: Install dependencies
         working-directory: ./
-        run: make ci
+        run: make install
       - name: Lint code
         working-directory: ./
         run: make lint
@@ -48,7 +48,7 @@ jobs:
         with:
           node-version: '14'
       - name: Install dependencies
-        run: make ci
+        run: make install
         working-directory: ./
       - name: Unit Tests
         working-directory: ./
