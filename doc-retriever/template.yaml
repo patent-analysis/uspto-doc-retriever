@@ -49,8 +49,8 @@ Resources:
 
     Metadata:
       DockerTag: grant-doc-retriever
-      DockerContext: ./grant-doc-retriever
-      Dockerfile: ../grant-doc-retriever/Dockerfile
+      DockerContext: ../ 
+      Dockerfile: ./grant-doc-retriever/Dockerfile
   
   AppDocRetrieverFunction:
     Type: AWS::Serverless::Function
@@ -78,8 +78,8 @@ Resources:
 
     Metadata:
       DockerTag: app-doc-retriever
-      DockerContext: ./grant-doc-retriever
-      Dockerfile: ../grant-doc-retriever/Dockerfile
+      DockerContext: ../
+      Dockerfile: ./grant-doc-retriever/Dockerfile
 
 Outputs:
   GrantDocRetrieverApi:
