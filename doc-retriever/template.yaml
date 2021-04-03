@@ -1,0 +1,124 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  USPTO doc-retriever serverless stack
+
+Globals:
+  Function:
+    Timeout: 900
+
+
+Parameters:
+  AWS_ACCESS_KEY_ID:
+    Type: String
+    Description: AWS access key Id.
+  AWS_SECRET_ACCESS_KEY:
+    Type: String
+    Description: AWS key secret.    
+
+Resources:
+  GrantDocRetrieverFunction:
+    Type: AWS::Serverless::Function
+    Handler: ./grant-doc-retriever/app.lambdaHandler
+    CodeUri: ./
+    Properties:
+      PackageType: Image
+      Environment:
+        Variables:
+          AWS_ACCESS_KEY_ID: 
+            Ref: AWS_ACCESS_KEY_ID
+          AWS_SECRET_ACCESS_KEY: 
+            Ref: AWS_SECRET_ACCESS_KEY
+      Events:
+        DocRetrieverEvent:
+          Type: Api
+          Properties:
+            Path: /retrieve
+            Method: post
+        InvocationLevel:
+          Type: Schedule
+          Properties:
+            Schedule: cron(0 0 1 * ? *)
+
+    Metadata:
+      DockerTag: nodejs14.x-v1
+      DockerContext: ./grant-doc-retriever
+      Dockerfile: Dockerfile
+  
+  ApplicationDocRetrieverFunction:
+    Type: AWS::Serverless::Function
+    Handler: app.lambdaHandler
+    CodeUri: ./application-doc-retriever
+    Properties:
+      PackageType: Image
+      Environment:
+        Variables:
+          AWS_ACCESS_KEY_ID: 
+            Ref: AWS_ACCESS_KEY_ID
+          AWS_SECRET_ACCESS_KEY: 
+            Ref: AWS_SECRET_ACCESS_KEY
+      Events:
+        DocRetrieverEvent:
+          Type: Api
+          Properties:
+            Path: /retrieve
+            Method: post
+        InvocationLevel:
+          Type: Schedule
+          Properties:
+            Schedule: cron(0 0 1 * ? *)
+    Metadata:
+      DockerTag: nodejs14.x-v1
+      DockerContext: ./grant-doc-retriever
+      Dockerfile: Dockerfile
+
+  SourceBucket:
+  Type: 'AWS::S3::Bucket'
+  Properties:
+    BucketName: uspto-documents-storage
+    AccessControl: BucketOwnerFullControl
+  
+  SourceBucketPolicy:
+    Type: 'AWS::S3::BucketPolicy'
+    Properties:
+      Bucket: uspto-documents-storage
+      PolicyDocument:
+        Statement:
+          - Sid: PublicRead
+            Effect: Allow
+            Principal: "*"
+            Action:
+              - s3:GetObject
+              - s3:GetObjectVersion
+            Resource:
+              - arn:aws:s3:::uspto-documents-storage/* 
+          - Sid: ReadWrite
+            Effect: Allow
+            Principal: 
+              AWS: 
+              -  "arn:aws:iam::147427553671:user/psv_app" 
+              # TODO: UPDATE THE ARN
+            Action:
+              - s3:*
+            Resource:
+              - arn:aws:s3:::uspto-documents-storage/*
+
+Outputs:
+  GrantDocRetrieverApi:
+    Description: "API Gateway endpoint URL for Prod stage for GrantDocRetrieverApi function"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/grant/retrieve/"
+  GrantDocRetrieverFunction:
+    Description: "DocRetriever Lambda Function ARN"
+    Value: !GetAtt GrantDocRetrieverFunction.Arn
+  GrantDocRetrieverFunctionIamRole:
+    Description: "Implicit IAM Role created for DocRetriever function"
+    Value: !GetAtt GrantDocRetrieverFunctionRole.Arn
+  ApplicationDocRetrieverApi:
+    Description: "API Gateway endpoint URL for Prod stage for ApplicationDocRetrieverApi function"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/application/retrieve/"
+  ApplicationDocRetrieverFunction:
+    Description: "DocRetriever Lambda Function ARN"
+    Value: !GetAtt ApplicationDocRetrieverFunction.Arn
+  ApplicationDocRetrieverFunctionIamRole:
+    Description: "Implicit IAM Role created for DocRetriever function"
+    Value: !GetAtt ApplicationDocRetrieverFunctionRole.Arn    

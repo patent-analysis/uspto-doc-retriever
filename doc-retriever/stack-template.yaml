@@ -1,0 +1,33 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: Cloudformation resource template.
+
+Resources:
+  TaRepo: # repo holding the ta serverless container image
+    Type: AWS::ECR::Repository
+    Properties: 
+      RepositoryName: "ta-repository"
+      RepositoryPolicyText: 
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Sid: AllowPushPull
+            Effect: Allow
+            Principal: 
+              AWS: 
+                - "arn:aws:iam::147427553671:user/psv_app"
+                # TODO: get new user ARN
+            Action: 
+              - "ecr:GetDownloadUrlForLayer"
+              - "ecr:BatchGetImage"
+              - "ecr:BatchCheckLayerAvailability"
+              - "ecr:PutImage"
+              - "ecr:InitiateLayerUpload"
+              - "ecr:UploadLayerPart"
+              - "ecr:CompleteLayerUpload"
+              - "ecr:GetAuthorizationToken"
+  TaStackS3Bucket: # bucket holding the serverless template file
+    Type: AWS::S3::Bucket 
+    Properties:
+      BucketName: ta-stack-bucket
+      AccessControl: BucketOwnerFullControl
