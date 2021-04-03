@@ -60,14 +60,14 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
-      - name: Set project dir environment var
-        run: export GITHUB_WORKSPACE=${{ github.workspace }}/doc-retriever
       - name: Cloudformation deploy
         uses: aws-actions/aws-cloudformation-github-deploy@v1
         with:
           name: uspto-doc-retriever-stack
           template: stack-template.yaml
           no-fail-on-empty-changeset: "1"
+        env:
+          GITHUB_WORKSPACE: ${{ github.workspace }}/doc-retriever
       - name: SAM build
         uses: youyo/aws-sam-action/python3.8@v2
         with:
@@ -76,6 +76,7 @@ jobs:
         uses: youyo/aws-sam-action/python3.8@v2
         with:
           sam_command: "package --output-template-file packaged-template.yaml --debug --region us-east-1 --image-repository 134442622645.dkr.ecr.us-east-1.amazonaws.com/uspto-grants-doc-repository --s3-bucket doc-retriever-stack-bucket" 
+        
       - name: SAM deploy
         uses: youyo/aws-sam-action/python3.8@v2
         with:
