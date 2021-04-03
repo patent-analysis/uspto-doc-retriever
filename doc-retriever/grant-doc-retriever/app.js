@@ -10,7 +10,12 @@ const AWS = require('aws-sdk');
 
 const { initUtils, extractXmlFile, downloadFile, uploadFile } = require('./utils/utils');
 // eslint-disable-next-line no-undef
-const EFS_PATH = path.resolve(process.env.EFS_PATH.trim())
+let EFS_PATH;
+if (process.env.EFS_PATH) 
+    EFS_PATH =  path.resolve(process.env.EFS_PATH.trim());
+else
+    EFS_PATH = path.resolve('tmp')
+
 if (!fs.existsSync(EFS_PATH)) {
     fs.mkdirSync(EFS_PATH);
 }
