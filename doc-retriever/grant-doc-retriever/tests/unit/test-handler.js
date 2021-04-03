@@ -14,7 +14,7 @@ sinon.mock(utils);
 sinon.mock(fs);
 sinon.mock(axios);
 
-describe0('lambdaHandler tests', function () {
+describe('lambdaHandler tests', function () {
     it('first test', async () => {
         // TODO: Write real tests
         assert.equals(1, 1);
