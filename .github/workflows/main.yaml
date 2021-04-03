@@ -69,6 +69,7 @@ jobs:
           export GITHUB_WORKSPACE=${{ github.workspace }}/doc-retriever
           pwd
           echo $GITHUB_WORKSPACE
+
       - name: Configure AWS credentials
         id: credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -76,6 +77,7 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
+
       - name: Cloudformation deploy
         uses: aws-actions/aws-cloudformation-github-deploy@v1
         with:
@@ -85,10 +87,12 @@ jobs:
           working-directory: doc-retriever
         env:
           GITHUB_WORKSPACE: ${{ github.workspace }}/doc-retriever
+
       - name: SAM build
         uses: youyo/aws-sam-action/python3.8@v2
         with:
           sam_command: "build --cached --parallel -t ./doc-retriever/template.yaml"
+
       - name: SAM package
         uses: youyo/aws-sam-action/python3.8@v2
         with:
@@ -97,7 +101,7 @@ jobs:
       - name: SAM deploy
         uses: youyo/aws-sam-action/python3.8@v2
         with:
-          sam_command: "deploy -t ./doc-retriever/packaged-template.yaml --stack-name uspto-doc-retriever-serverless-stack --region us-east-1 --debug --image-repository 134442622645.dkr.ecr.us-east-1.amazonaws.com/uspto-grants-doc-repository --s3-bucket doc-retriever-stack-bucket --capabilities CAPABILITY_IAM  --no-fail-on-empty-changeset --parameter-overrides --parameter-overrides 'ParameterKey=AWS_ACCESS_KEY_ID,ParameterValue=$(AWS_ACCESS_KEY_ID),ParameterKey=AWS_SECRET_ACCESS_KEY,ParameterValue=$(AWS_SECRET_ACCESS_KEY),ParameterKey=NODE_ENV,ParameterValue=prod,ParameterKey=AWS_REGION,ParameterValue=us-east-1'"
+          sam_command: "deploy -t ./doc-retriever/packaged-template.yaml --stack-name uspto-doc-retriever-serverless-stack --region us-east-1 --debug --image-repository 134442622645.dkr.ecr.us-east-1.amazonaws.com/uspto-grants-doc-repository --s3-bucket doc-retriever-stack-bucket --capabilities CAPABILITY_IAM  --no-fail-on-empty-changeset --parameter-overrides --parameter-overrides ParameterKey=AWS_ACCESS_KEY_ID,ParameterValue=$(AWS_ACCESS_KEY_ID) ParameterKey=AWS_SECRET_ACCESS_KEY,ParameterValue=$(AWS_SECRET_ACCESS_KEY) ParameterKey=NODE_ENV,ParameterValue=prod ParameterKey=AWS_REGION,ParameterValue=us-east-1"
           actions_comment: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
