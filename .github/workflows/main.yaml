@@ -46,7 +46,7 @@ jobs:
     environment: AWS_US_EAST_1_1
     defaults:
       run:
-        working-directory: doc-retriever
+        working-directory: ./doc-retriever
     steps:
       - uses: actions/checkout@v2
       - name: Set up node 14
@@ -59,6 +59,13 @@ jobs:
       - name: Unit Tests
         working-directory: ./
         run: make test
+      - name: check working dir 1
+        run: pwd
+      - name: switch back working env
+        run: pwd
+        working-directory: ./doc-retriever
+      - name: check working dir 2
+        run: pwd
       - name: Configure AWS credentials
         id: credentials
         uses: aws-actions/configure-aws-credentials@v1
