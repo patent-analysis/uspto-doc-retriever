@@ -28,7 +28,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: ../
-        run: make init
+        run: make install
       - name: Lint code
         working-directory: ../
         run: make lint
@@ -39,7 +39,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     name: deploy step
-    if: github.event.pull_request.merged
+    # if: github.event.pull_request.merged    for now, deploy from the branch
     needs: build
     environment: AWS_US_EAST_1_1
     steps:
@@ -49,8 +49,11 @@ jobs:
         with:
           node-version: '14'
       - name: Install dependencies
-        run: make init
+        run: make install
         working-directory: ../
+      - name: Unit Tests
+        working-directory: ../
+        run: make test
       - name: Configure AWS credentials
         id: credentials
         uses: aws-actions/configure-aws-credentials@v1
