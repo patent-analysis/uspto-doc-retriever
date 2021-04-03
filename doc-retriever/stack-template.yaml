@@ -3,10 +3,10 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: Cloudformation resource template.
 
 Resources:
-  TaRepo: # repo holding the ta serverless container image
+  DocRetrieverRepo: # repo holding the serverless container image for grant docs retriever
     Type: AWS::ECR::Repository
     Properties: 
-      RepositoryName: "ta-repository"
+      RepositoryName: "uspto-grants-doc-repository"
       RepositoryPolicyText: 
         Version: "2012-10-17"
         Statement: 
@@ -14,9 +14,7 @@ Resources:
             Sid: AllowPushPull
             Effect: Allow
             Principal: 
-              AWS: 
-                - "arn:aws:iam::147427553671:user/psv_app"
-                # TODO: get new user ARN
+              AWS: !Join [':', ['arn:aws:iam:', !Ref AWS::AccountId, user/psv_app]]
             Action: 
               - "ecr:GetDownloadUrlForLayer"
               - "ecr:BatchGetImage"
@@ -26,8 +24,60 @@ Resources:
               - "ecr:UploadLayerPart"
               - "ecr:CompleteLayerUpload"
               - "ecr:GetAuthorizationToken"
-  TaStackS3Bucket: # bucket holding the serverless template file
+
+  # AppDocRepo: # repo holding the serverless container image for application docs retriever
+  #   Type: AWS::ECR::Repository
+  #   Properties: 
+  #     RepositoryName: "uspto-app-doc-repository"
+  #     RepositoryPolicyText: 
+  #       Version: "2012-10-17"
+  #       Statement: 
+  #         - 
+  #           Sid: AllowPushPull
+  #           Effect: Allow
+  #           Principal: 
+  #             AWS: !Join [':', ['arn:aws:iam:', !Ref AWS::AccountId, user/psv_app]]
+  #           Action: 
+  #             - "ecr:GetDownloadUrlForLayer"
+  #             - "ecr:BatchGetImage"
+  #             - "ecr:BatchCheckLayerAvailability"
+  #             - "ecr:PutImage"
+  #             - "ecr:InitiateLayerUpload"
+  #             - "ecr:UploadLayerPart"
+  #             - "ecr:CompleteLayerUpload"
+  #             - "ecr:GetAuthorizationToken"            
+  
+  DocRetrieverStackS3Bucket: # bucket holding the serverless template file
     Type: AWS::S3::Bucket 
     Properties:
-      BucketName: ta-stack-bucket
+      BucketName: doc-retriever-stack-bucket
       AccessControl: BucketOwnerFullControl
+
+  DocStorageBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: uspto-documents-storage
+      AccessControl: BucketOwnerFullControl
+  
+  DocStorageBucketPolicy:
+    Type: 'AWS::S3::BucketPolicy'
+    Properties:
+      Bucket: uspto-documents-storage
+      PolicyDocument:
+        Statement:
+          - Sid: PublicRead
+            Effect: Allow
+            Principal: "*"
+            Action:
+              - s3:GetObject
+              - s3:GetObjectVersion
+            Resource:
+              - arn:aws:s3:::uspto-documents-storage/* 
+          - Sid: ReadWrite
+            Effect: Allow
+            Principal: 
+              AWS: !Join [':', ['arn:aws:iam:', !Ref AWS::AccountId, user/psv_app]] 
+            Action:
+              - s3:*
+            Resource:
+              - arn:aws:s3:::uspto-documents-storage/*     

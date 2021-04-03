@@ -1,0 +1,76 @@
+name: CI/CD Workflow
+
+on:
+  push:
+      branches: 
+        - '*'
+        - '!main'
+  pull_request:
+      types: [opened, closed]
+      branches:
+        - '*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up node 14
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+      - name: Install dependencies
+        run: make init
+      - name: Lint code
+        run: make lint
+      - name: Unit Tests
+        run: make test
+
+  deploy:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged
+    needs: build
+    environment: AWS_US_EAST_1_1
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.8
+      - name: Set up node 14
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+      - name: Install dependencies
+        run: make init
+      - name: Configure AWS credentials
+        id: credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      - name: Cloudformation deploy
+        uses: aws-actions/aws-cloudformation-github-deploy@v1
+        with:
+          name: uspto-doc-retriever-stack
+          template: stack-template.yaml
+          no-fail-on-empty-changeset: "1"
+      - name: SAM build
+        uses: youyo/aws-sam-action/python3.8@v2
+        working-directory: doc-retriever
+        with:
+          sam_command: "build --cached --parallel"
+      - name: SAM package
+        uses: youyo/aws-sam-action/python3.8@v2
+        working-directory: doc-retriever
+        with:
+          sam_command: "package --output-template-file packaged-template.yaml --debug --region us-east-1 --image-repository 134442622645.dkr.ecr.us-east-1.amazonaws.com/uspto-grants-doc-repository --s3-bucket doc-retriever-stack-bucket" 
+      - name: SAM deploy
+        uses: youyo/aws-sam-action/python3.8@v2
+        with:
+          sam_command: "deploy -t packaged-template.yaml --stack-name uspto-doc-retriever-serverless-stack --region us-east-1 --debug --image-repository 134442622645.dkr.ecr.us-east-1.amazonaws.com/uspto-grants-doc-repository --s3-bucket doc-retriever-stack-bucket --capabilities CAPABILITY_IAM  --no-fail-on-empty-changeset --parameter-overrides --parameter-overrides 'KeyPairName=AWS_ACCESS_KEY_ID AWS_ACCESS_KEY_ID=$(AWS_ACCESS_KEY_ID) KeyPairName=AWS_SECRET_ACCESS_KEY AWS_SECRET_ACCESS_KEY=$(AWS_SECRET_ACCESS_KEY)  KeyPairName=NODE_ENV NODE_ENV=prod  KeyPairName=AWS_REGION AWS_REGION=us-east-1'"
+          actions_comment: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-east-1

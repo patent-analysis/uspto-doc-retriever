@@ -1,12 +1,11 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  USPTO doc-retriever serverless stack
+  USPTO grant and application bulk document retriever SAM stack
 
 Globals:
   Function:
     Timeout: 900
-
 
 Parameters:
   AWS_ACCESS_KEY_ID:
@@ -17,13 +16,11 @@ Parameters:
     Description: AWS key secret.
   AWS_REGION:
     Type: String
-    Default: us-east-1
     Description: The AWS Region.
   NODE_ENV:
     Type: String
     Description: The nodejs Environment.
     
-
 Resources:
   GrantDocRetrieverFunction:
     Type: AWS::Serverless::Function
@@ -31,12 +28,14 @@ Resources:
     CodeUri: ./
     Properties:
       PackageType: Image
+      ImageUri: !Join ['.', [!Ref AWS::AccountId, 'dkr.ecr', !Ref AWS::Region, 'amazonaws.com/', !Ref DocRetrieverRepo]]
       Environment:
         Variables:
-          AWS_ACCESS_KEY_ID: 
-            Ref: AWS_ACCESS_KEY_ID
-          AWS_SECRET_ACCESS_KEY: 
-            Ref: AWS_SECRET_ACCESS_KEY
+          AWS_ACCESS_KEY_ID: !Ref AWS_ACCESS_KEY_ID
+          AWS_SECRET_ACCESS_KEY: !Ref AWS_SECRET_ACCESS_KEY
+          AWS_REGION: !Ref AWS_REGION
+          NODE_ENV: !Ref NODE_ENV
+
       Events:
         DocRetrieverEvent:
           Type: Api
@@ -46,25 +45,26 @@ Resources:
         InvocationLevel:
           Type: Schedule
           Properties:
-            Schedule: cron(0 0 1 * ? *)
+            Schedule: cron(59 23 * * 2)
 
     Metadata:
-      DockerTag: nodejs14.x-v1
+      DockerTag: grant-doc-retriever
       DockerContext: ./grant-doc-retriever
-      Dockerfile: Dockerfile
+      Dockerfile: ../grant-doc-retriever/Dockerfile
   
-  ApplicationDocRetrieverFunction:
+  AppDocRetrieverFunction:
     Type: AWS::Serverless::Function
     Handler: app.lambdaHandler
     CodeUri: ./application-doc-retriever
     Properties:
       PackageType: Image
+      ImageUri: !Join ['.', [!Ref AWS::AccountId, 'dkr.ecr', !Ref AWS::Region, 'amazonaws.com/', !Ref DocRetrieverRepo]]
       Environment:
         Variables:
-          AWS_ACCESS_KEY_ID: 
-            Ref: AWS_ACCESS_KEY_ID
-          AWS_SECRET_ACCESS_KEY: 
-            Ref: AWS_SECRET_ACCESS_KEY
+          AWS_ACCESS_KEY_ID: !Ref AWS_ACCESS_KEY_ID
+          AWS_SECRET_ACCESS_KEY: !Ref AWS_SECRET_ACCESS_KEY
+          AWS_REGION: !Ref AWS_REGION
+          NODE_ENV: !Ref NODE_ENV
       Events:
         DocRetrieverEvent:
           Type: Api
@@ -74,42 +74,12 @@ Resources:
         InvocationLevel:
           Type: Schedule
           Properties:
-            Schedule: cron(0 0 1 * ? *)
-    Metadata:
-      DockerTag: nodejs14.x-v1
-      DockerContext: ./grant-doc-retriever
-      Dockerfile: Dockerfile
+            Schedule: cron(59 23 * * 4)
 
-  SourceBucket:
-  Type: 'AWS::S3::Bucket'
-  Properties:
-    BucketName: uspto-documents-storage
-    AccessControl: BucketOwnerFullControl
-  
-  SourceBucketPolicy:
-    Type: 'AWS::S3::BucketPolicy'
-    Properties:
-      Bucket: uspto-documents-storage
-      PolicyDocument:
-        Statement:
-          - Sid: PublicRead
-            Effect: Allow
-            Principal: "*"
-            Action:
-              - s3:GetObject
-              - s3:GetObjectVersion
-            Resource:
-              - arn:aws:s3:::uspto-documents-storage/* 
-          - Sid: ReadWrite
-            Effect: Allow
-            Principal: 
-              AWS: 
-              -  "arn:aws:iam::147427553671:user/psv_app" 
-              # TODO: UPDATE THE ARN
-            Action:
-              - s3:*
-            Resource:
-              - arn:aws:s3:::uspto-documents-storage/*
+    Metadata:
+      DockerTag: app-doc-retriever
+      DockerContext: ./grant-doc-retriever
+      Dockerfile: ../grant-doc-retriever/Dockerfile
 
 Outputs:
   GrantDocRetrieverApi:
@@ -123,10 +93,10 @@ Outputs:
     Value: !GetAtt GrantDocRetrieverFunctionRole.Arn
   ApplicationDocRetrieverApi:
     Description: "API Gateway endpoint URL for Prod stage for ApplicationDocRetrieverApi function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/application/retrieve/"
-  ApplicationDocRetrieverFunction:
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/app/retrieve/"
+  AppDocRetrieverFunction:
     Description: "DocRetriever Lambda Function ARN"
-    Value: !GetAtt ApplicationDocRetrieverFunction.Arn
-  ApplicationDocRetrieverFunctionIamRole:
+    Value: !GetAtt AppDocRetrieverFunction.Arn
+  AppDocRetrieverFunctionIamRole:
     Description: "Implicit IAM Role created for DocRetriever function"
-    Value: !GetAtt ApplicationDocRetrieverFunctionRole.Arn    
+    Value: !GetAtt AppDocRetrieverFunctionRole.Arn    

@@ -1,12 +1,15 @@
-const moment = require('moment');
 const fs = require('fs');
+const process = require('process');
 const path = require('path');
 const readline = require('readline');
+const moment = require('moment');
 const convert = require('xml-js');
-const { initUtils, extractXmlFile, downloadFile, uploadFile } = require('../utils/utils');
 const axios = require('axios');
 const extract = require('extract-zip');
 const AWS = require('aws-sdk');
+
+const { initUtils, extractXmlFile, downloadFile, uploadFile } = require('../utils/utils');
+// eslint-disable-next-line no-undef
 const _TMP_DIR = path.resolve(__dirname, '..', 'tmp');
 
 /* Init the utils dependencies */
@@ -105,7 +108,7 @@ async function processXmlFile(xmlFileName) {
  * @returns {Object} object - API Gateway Lambda Proxy Output Format
  * 
  */
-exports.lambdaHandler = async (event, context) => {
+exports.lambdaHandler = async (event) => {
     console.debug('Handling event ', event);
     console.debug(`Current NODE_ENV = ${process.env.NODE_ENV}`);
     const startTime = Date.now();
@@ -135,5 +138,5 @@ exports.lambdaHandler = async (event, context) => {
     await processXmlFile(xmlFileName);
 
     console.log(`Completed processing the grant file ${compressedFileName} for date ${fileDate.toDate()} in ${Date.now() - startTime} ms`);
-    return new Promise((resolve, _) => { resolve('Done') });
+    return new Promise((resolve) => { resolve('Done') });
 }

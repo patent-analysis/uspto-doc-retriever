@@ -14,11 +14,13 @@
     "xml-js": "^1.6.11"
   },
   "scripts": {
-    "start": "",
-    "test": "mocha tests/unit/"
+    "lint": "./node_modules/.bin/eslint *.js",
+    "test": "node ./node_modules/mocha/bin/mocha ./tests/unit/*.js"
   },
   "devDependencies": {
     "chai": "^4.2.0",
-    "mocha": "^8.2.1"
+    "eslint": "^7.23.0",
+    "mocha": "^8.2.1",
+    "sinon": "^10.0.0"
   }
 }
