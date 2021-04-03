@@ -61,7 +61,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
       - name: Set project dir environment var
-        run: echo ::set-env name=PROJECT_DIR::"$GITHUB_WORKSPACE/doc-retriever"
+        run: export GITHUB_WORKSPACE=${{ github.workspace }}/doc-retriever
       - name: Cloudformation deploy
         uses: aws-actions/aws-cloudformation-github-deploy@v1
         with:
