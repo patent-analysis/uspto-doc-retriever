@@ -19,6 +19,9 @@ jobs:
   build:
     name: build step
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: doc-retriever
     steps:
       - uses: actions/checkout@v2
       - name: Set up node 14
@@ -41,6 +44,9 @@ jobs:
     # if: github.event.pull_request.merged    for now, deploy from the branch
     needs: build
     environment: AWS_US_EAST_1_1
+    defaults:
+      run:
+        working-directory: doc-retriever
     steps:
       - uses: actions/checkout@v2
       - name: Set up node 14
@@ -66,6 +72,7 @@ jobs:
           name: uspto-doc-retriever-stack
           template: stack-template.yaml
           no-fail-on-empty-changeset: "1"
+        working-directory: doc-retriever
         env:
           GITHUB_WORKSPACE: ${{ github.workspace }}/doc-retriever
       - name: SAM build
