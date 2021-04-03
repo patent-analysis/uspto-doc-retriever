@@ -45,7 +45,7 @@ Resources:
         InvocationLevel:
           Type: Schedule
           Properties:
-            Schedule: cron(59 23 * * 2)
+            Schedule: cron(59 23 * * 3 *)
 
     Metadata:
       DockerTag: grant-doc-retriever
@@ -74,7 +74,7 @@ Resources:
         InvocationLevel:
           Type: Schedule
           Properties:
-            Schedule: cron(59 23 * * 4)
+            Schedule: cron(59 23 * * 5 *)
 
     Metadata:
       DockerTag: app-doc-retriever
