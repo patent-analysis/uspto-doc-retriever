@@ -140,3 +140,10 @@ Resources:
           Permissions: "0777"
         Path: "/psv_efs"
 
+Outputs:
+  AccessPointResourceArn:
+    Description: "The EFS access point resource"
+    Value: !GetAtt AccessPointResource.Arn
+    Export:
+      Name: 'AccessPointResourceArn'
+    

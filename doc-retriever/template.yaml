@@ -23,7 +23,7 @@ Parameters:
   EFSpath:
     Type: String
     Default: /mnt/efs0
-    
+
 Resources:
   GrantDocRetrieverFunction:
     Type: AWS::Serverless::Function
@@ -53,7 +53,8 @@ Resources:
             Schedule: cron(59 23 ? * 3 *)
       
       FileSystemConfigs:
-        - Arn: !GetAtt AccessPointResource.Arn
+        - Arn: 
+            Fn::ImportValue: AccessPointResourceArn      
           LocalMountPath: !Ref EFSpath
 
     Metadata:
