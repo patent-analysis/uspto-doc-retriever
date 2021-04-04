@@ -25,13 +25,6 @@ Parameters:
     Default: /mnt/efs0
 
 
-      VpcConfig:
-        SecurityGroupIds:
-          - sg-085912345678492fb
-        SubnetIds:
-          - subnet-071f712345678e7c8
-          - subnet-07fd123456788a036
-
 
 Resources:
   GrantDocRetrieverFunction:
