@@ -180,11 +180,11 @@ Resources:
 
 
 Outputs:
-  AccessPointResourceArn:
-    Description: "The EFS access point resource"
-    Value: !GetAtt AccessPointResource.Arn
-    Export:
-      Name: 'AccessPointResourceArn'
+  # AccessPointResourceArn:
+  #   Description: "The EFS access point resource"
+  #   Value: !GetAtt AccessPointResource.Arn
+  #   Export:
+  #     Name: 'AccessPointResourceArn'
   MountAccessPointResourceArn:
     Description: "The EFS access point resource"
     Value: !GetAtt MountAccessPointResource.Arn
