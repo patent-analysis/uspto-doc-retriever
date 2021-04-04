@@ -79,12 +79,12 @@ jobs:
       - name: SAM package
         uses: youyo/aws-sam-action/python3.8@v2
         with:
-          sam_command: "package --output-template-file ./doc-retriever/packaged-template.yaml --debug --region us-east-1 --image-repository 134442622645.dkr.ecr.us-east-1.amazonaws.com/uspto-doc-retriever-ecr --s3-bucket doc-retriever-stack-bucket" 
+          sam_command: "package --output-template-file ./doc-retriever/packaged-template.yaml --debug --region us-east-1 --image-repository 134442622645.dkr.ecr.us-east-1.amazonaws.com/uspto-doc-retriever-ecr --s3-bucket uspto-psv-sam-stack-bucket" 
         
       - name: SAM deploy
         uses: youyo/aws-sam-action/python3.8@v2
         with:
-          sam_command: 'deploy -t ./doc-retriever/packaged-template.yaml --stack-name uspto-psv-sam-stack --region us-east-1 --debug --image-repository 134442622645.dkr.ecr.us-east-1.amazonaws.com/uspto-doc-retriever-ecr --s3-bucket doc-retriever-stack-bucket --capabilities CAPABILITY_IAM  --no-fail-on-empty-changeset --parameter-overrides "ParameterKey=AwsAccessKeyId,ParameterValue=${AWS_ACCESS_KEY_ID} ParameterKey=AwsSecretAccessKey,ParameterValue=${AWS_SECRET_ACCESS_KEY} ParameterKey=NodeEnv,ParameterValue=prod ParameterKey=AwsRegion,ParameterValue=us-east-1"'
+          sam_command: 'deploy -t ./doc-retriever/packaged-template.yaml --stack-name uspto-psv-sam-stack --region us-east-1 --debug --image-repository 134442622645.dkr.ecr.us-east-1.amazonaws.com/uspto-doc-retriever-ecr --s3-bucket uspto-psv-sam-stack-bucket --capabilities CAPABILITY_IAM  --no-fail-on-empty-changeset --parameter-overrides "ParameterKey=AwsAccessKeyId,ParameterValue=${AWS_ACCESS_KEY_ID} ParameterKey=AwsSecretAccessKey,ParameterValue=${AWS_SECRET_ACCESS_KEY} ParameterKey=NodeEnv,ParameterValue=prod ParameterKey=AwsRegion,ParameterValue=us-east-1"'
           actions_comment: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -30,7 +30,7 @@ Resources:
   DocRetrieverStackS3Bucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: doc-retriever-stack-bucket
+      BucketName: uspto-psv-sam-stack-bucket
       AccessControl: BucketOwnerFullControl
 
 ###############     Document Storage Bucket   ###############
