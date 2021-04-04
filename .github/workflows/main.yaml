@@ -19,9 +19,6 @@ jobs:
   build:
     name: build step
     runs-on: ubuntu-latest
-    # defaults:
-    #   run:
-    #     working-directory: doc-retriever
     steps:
       - uses: actions/checkout@v2
       - name: Set up node 14
@@ -39,15 +36,12 @@ jobs:
         run: make test
 
   deploy:
-    timeout-minutes: 10
+    timeout-minutes: 20
     runs-on: ubuntu-latest
     name: deploy step
     # if: github.event.pull_request.merged    for now, deploy from the branch
     # needs: build                            for now, deploy in-parallel
     environment: AWS_US_EAST_1_1
-    # defaults:
-    #   run:
-    #     working-directory: ./doc-retriever
     steps:
       - uses: actions/checkout@v2
       - name: Set up node 14
@@ -60,18 +54,6 @@ jobs:
       - name: Unit Tests
         working-directory: ./
         run: make test
-      #  TODO: Cleanup
-      # - name: check working dir 1
-      #   run: pwd
-      # - name: switch back working env
-      #   run: pwd
-      #   working-directory: ./
-      # - name: update env
-      #   run: |
-      #     export GITHUB_WORKSPACE=${{ github.workspace }}/doc-retriever
-      #     pwd
-      #     echo $GITHUB_WORKSPACE
-
       - name: Configure AWS credentials
         id: credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -86,7 +68,6 @@ jobs:
           name: uspto-doc-retriever-stack
           template: doc-retriever/stack-template.yaml
           no-fail-on-empty-changeset: "1"
-          # working-directory: doc-retriever
         env:
           GITHUB_WORKSPACE: ${{ github.workspace }}/doc-retriever
 
