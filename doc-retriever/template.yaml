@@ -69,10 +69,10 @@ Resources:
             Fn::ImportValue: EfsAccessPointArn
       VpcConfig:
         SecurityGroupIds:
-          - Fn::ImportValue: "PrivateSecurityGroup"
+          - Fn::ImportValue: "PsvPrivateSecurityGroup"
         SubnetIds:
-          - Fn::ImportValue: "PrivateSubnetOne"
-          - Fn::ImportValue: "PrivateSubnetTwo"
+          - Fn::ImportValue: "PsvPrivateSubnetOne"
+          - Fn::ImportValue: "PsvPrivateSubnetTwo"
       Policies:
         - AWSXRayDaemonWriteAccess
         - AWSLambdaVPCAccessExecutionRole
