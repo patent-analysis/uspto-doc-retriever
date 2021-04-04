@@ -82,7 +82,7 @@ Resources:
     Properties:
       VpcId: !Ref PsvVPC
       AvailabilityZone: !Select [ 0, !GetAZs '' ]
-      CidrBlock: !Ref 10.0.4.0/24
+      CidrBlock: 10.0.4.0/24
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
@@ -92,7 +92,7 @@ Resources:
     Properties:
       VpcId: !Ref PsvVPC
       AvailabilityZone: !Select [ 1, !GetAZs  '' ]
-      CidrBlock: !Ref 10.0.5.0/24
+      CidrBlock: 10.0.5.0/24
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name

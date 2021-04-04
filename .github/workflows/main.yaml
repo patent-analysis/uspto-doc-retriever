@@ -36,7 +36,7 @@ jobs:
         run: make test
 
   deploy:
-    timeout-minutes: 20
+    timeout-minutes: 20       #TODO: Change once you are done.
     runs-on: ubuntu-latest
     name: deploy step
     # if: github.event.pull_request.merged    for now, deploy from the branch
