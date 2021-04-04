@@ -64,8 +64,7 @@ Resources:
           - Fn::ImportValue: PrivateSecurityGroup
         SubnetIds:
           - Fn::ImportValue: PrivateSubnetOne
-            Policies:
-      
+          
       Policies:
       - Statement:
         - Sid: AllowAccessToVPCNetwork
