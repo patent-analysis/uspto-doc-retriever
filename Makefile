@@ -12,7 +12,9 @@ install: 	## install the nodejs dependencies
 	cd ./doc-retriever/application-doc-retriever && npm install
 
 lint:	## run the eslint linter
+	echo Linting the grant-doc-retriever app ...
 	cd ./doc-retriever/grant-doc-retriever/ && npm run lint
+	echo Linting the application-doc-retriever app ...
 	cd ./doc-retriever/application-doc-retriever/ && npm run lint
 
 test: ## run the unit tests
