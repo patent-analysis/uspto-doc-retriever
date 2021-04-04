@@ -7,7 +7,7 @@ Resources:
   DocRetrieverRepo:
     Type: AWS::ECR::Repository
     Properties:
-      RepositoryName: "uspto-grants-doc-repository"
+      RepositoryName: "uspto-doc-retriever-ecr"
       RepositoryPolicyText:
         Version: "2012-10-17"
         Statement:
