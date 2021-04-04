@@ -58,6 +58,7 @@ Resources:
           Properties:
             Path: grant/retrieve
             Method: post
+            TimeoutInMillis: 900000
         InvocationLevel:
           Type: Schedule
           Properties:
