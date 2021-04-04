@@ -85,7 +85,7 @@ Resources:
   MountTargetVPC:
     Type: AWS::EC2::VPC
     Properties:
-      CidrBlock: 10.0.0.0/16
+      CidrBlock: 10.0.0.0/20
       Tags:
        - Key: stack
          Value: psv      
