@@ -28,6 +28,7 @@ Resources:
   GrantDocRetrieverFunction:
     Type: AWS::Serverless::Function
     Handler: ./grant-doc-retriever/app.lambdaHandler
+    Timeout: 900
     Properties:
       CodeUri: ./
       Description: Process the bulk USPTO grants files
@@ -58,7 +59,6 @@ Resources:
           Properties:
             Path: grant/retrieve
             Method: post
-            TimeoutInMillis: 900000
         InvocationLevel:
           Type: Schedule
           Properties:
@@ -121,6 +121,14 @@ Resources:
       DockerTag: app-doc-retriever
       DockerContext: ./
       Dockerfile: ./application-doc-retriever/Dockerfile
+
+  # APIGatewayIntegration:
+  #   Type: 'AWS::ApiGatewayV2::Integration'
+  #   Properties:
+  #     ApiId: !Ref GrantDocRetrieverFunction
+  #     Description: Lambda Integration
+  #     IntegrationType: AWS
+  #     TimeoutInMillis: 900000
 
 Outputs:
   GrantDocRetrieverApi:
