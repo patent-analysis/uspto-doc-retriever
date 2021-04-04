@@ -5,7 +5,7 @@ let extract;
 let axios;
 let s3;
 let _TMP_DIR;
-const BUCKET_NAME = 'uspto-bulk-documents'
+const BUCKET_NAME = 'uspto-documents-storage'
 
 /**
  * Initializes the Utils dependencies
