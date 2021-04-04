@@ -8,11 +8,15 @@ const axios = require('axios');
 const extract = require('extract-zip');
 const AWS = require('aws-sdk');
 
-const { initUtils, extractXmlFile, downloadFile, uploadFile } = require('./utils/utils');
+const { initUtils,
+    extractXmlFile,
+    downloadFile,
+    uploadFile,
+    deleteTmpDir } = require('./utils/utils');
 // eslint-disable-next-line no-undef
 let EFS_PATH;
-if (process.env.EFS_PATH) 
-    EFS_PATH =  path.resolve(process.env.EFS_PATH.trim());
+if (process.env.EFS_PATH)
+    EFS_PATH = path.resolve(process.env.EFS_PATH.trim());
 else
     EFS_PATH = path.resolve('tmp')
 
@@ -83,7 +87,7 @@ async function processXmlFile(xmlFileName) {
                             const docNumber = result['us-patent-grant']['us-bibliographic-data-grant']['publication-reference']['document-id']['doc-number']['_text'].replace(/^0+/, "");
                             const docKind = result['us-patent-grant']['us-bibliographic-data-grant']['publication-reference']['document-id']['kind']['_text'];
                             const docId = `US${docNumber}${docKind}`;
-                            
+
                             await uploadFile(`docs/${docId}.xml`, xmlString);
                             extractedDocsCount++;
                         } else {
@@ -152,10 +156,8 @@ exports.lambdaHandler = async (event) => {
     await downloadFile(compressedFileName, fileDownloadUrl);
     await extractXmlFile(compressedFileName);
     await processXmlFile(xmlFileName);
+    deleteTmpDir(_TMP_DIR);
 
-
-    console.log(`delete the tmp dir...`);
-    fs.rmdirSync(_TMP_DIR, { recursive: true });
     console.log(`Completed processing the grant file ${compressedFileName} for date ${fileDate.toDate()} in ${Date.now() - startTime} ms`);
     return new Promise((resolve) => { resolve('Done') });
 }

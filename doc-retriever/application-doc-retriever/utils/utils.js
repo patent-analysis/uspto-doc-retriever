@@ -82,6 +82,7 @@ const downloadFile = async (compressedFileName, fileDownloadUrl) => {
  * @param {*} content 
  */
 async function uploadFile(key, content) {
+    console.debug('Upload file called ', key)
     const env = process.env.NODE_ENV;
     if (env && env.trim() == 'local') {
         const tmpFilePath = path.resolve(_TMP_DIR, key);

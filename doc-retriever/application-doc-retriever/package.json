@@ -1,9 +1,9 @@
 {
-  "name": "grant-doc-retriever",
+  "name": "application-doc-retriever",
   "version": "1.0.0",
-  "description": "grant-doc-retriever",
+  "description": "application-doc-retriever",
   "main": "app.js",
-  "repository": "https://github.com/patent-analysis/uspto-doc-retriever",
+  "repository": "https://github.com/patent-analysis/uspto-doc-retriever/",
   "author": "PSV",
   "license": "MIT",
   "dependencies": {

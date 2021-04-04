@@ -8,11 +8,15 @@ const axios = require('axios');
 const extract = require('extract-zip');
 const AWS = require('aws-sdk');
 
-const { initUtils, extractXmlFile, downloadFile, uploadFile } = require('../grant-doc-retriever/utils/utils');
+const { initUtils,
+    extractXmlFile,
+    downloadFile,
+    uploadFile,
+    deleteTmpDir } = require('./utils/utils');
 // eslint-disable-next-line no-undef
 let EFS_PATH;
-if (process.env.EFS_PATH) 
-    EFS_PATH =  path.resolve(process.env.EFS_PATH.trim());
+if (process.env.EFS_PATH)
+    EFS_PATH = path.resolve(process.env.EFS_PATH.trim());
 else
     EFS_PATH = path.resolve('tmp')
 
@@ -66,14 +70,14 @@ async function processXmlFile(xmlFileName) {
                 result = JSON.parse(result);
                 if (result['sequence-cwu']) {
                     const docNumber = result['sequence-cwu']['publication-reference']['document-id']['doc-number']['_text'].replace(/^0+/, "");
-                    const docNumber = result['sequence-cwu']['publication-reference']['document-id']['kind']['_text'];
+                    const docKind = result['sequence-cwu']['publication-reference']['document-id']['kind']['_text'];
                     const docId = `US${docNumber}${docKind}`;
 
                     await uploadFile(`seq/${docId}.xml`, xmlString);
                     extractedSeqDocsCount++;
                 } else {
                     if (result['us-patent-application']['us-bibliographic-data-application']['classifications-ipcr']) {
-                        let classifications = result['us-patent-grant']['us-bibliographic-data-application']['classifications-ipcr']['classification-ipcr'];
+                        let classifications = result['us-patent-application']['us-bibliographic-data-application']['classifications-ipcr']['classification-ipcr'];
                         let shouldUploadApplicationFile = false;
                         if (classifications.length) {
                             shouldUploadApplicationFile = classifications.some(c => c['section']['_text'] == 'A' || c['section']['_text'] == 'C');
@@ -84,7 +88,7 @@ async function processXmlFile(xmlFileName) {
                             const docNumber = result['us-patent-application']['us-bibliographic-data-application']['publication-reference']['document-id']['doc-number']['_text'].replace(/^0+/, "");
                             const docKind = result['us-patent-application']['us-bibliographic-data-application']['publication-reference']['document-id']['kind']['_text'];
                             const docId = `US${docNumber}${docKind}`;
-                  
+
                             await uploadFile(`docs/${docId}.xml`, xmlString);
                             extractedDocsCount++;
                         } else {
@@ -153,10 +157,8 @@ exports.lambdaHandler = async (event) => {
     await downloadFile(compressedFileName, fileDownloadUrl);
     await extractXmlFile(compressedFileName);
     await processXmlFile(xmlFileName);
+    deleteTmpDir(_TMP_DIR);
 
-
-    console.log(`Deleting the tmp dir...`);
-    fs.rmdirSync(_TMP_DIR, { recursive: true });
-    console.log(`Completed processing the grant file ${compressedFileName} for date ${fileDate.toDate()} in ${Date.now() - startTime} ms`);
+    console.log(`Completed processing the application file ${compressedFileName} for date ${fileDate.toDate()} in ${Date.now() - startTime} ms`);
     return new Promise((resolve) => { resolve('Done') });
 }
