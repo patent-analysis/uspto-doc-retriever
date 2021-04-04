@@ -24,28 +24,6 @@ Resources:
               - "ecr:UploadLayerPart"
               - "ecr:CompleteLayerUpload"
               - "ecr:GetAuthorizationToken"
-
-  # AppDocRepo: # repo holding the serverless container image for application docs retriever
-  #   Type: AWS::ECR::Repository
-  #   Properties: 
-  #     RepositoryName: "uspto-app-doc-repository"
-  #     RepositoryPolicyText: 
-  #       Version: "2012-10-17"
-  #       Statement: 
-  #         - 
-  #           Sid: AllowPushPull
-  #           Effect: Allow
-  #           Principal: 
-  #             AWS: !Join [':', ['arn:aws:iam:', !Ref AWS::AccountId, user/psv_app]]
-  #           Action: 
-  #             - "ecr:GetDownloadUrlForLayer"
-  #             - "ecr:BatchGetImage"
-  #             - "ecr:BatchCheckLayerAvailability"
-  #             - "ecr:PutImage"
-  #             - "ecr:InitiateLayerUpload"
-  #             - "ecr:UploadLayerPart"
-  #             - "ecr:CompleteLayerUpload"
-  #             - "ecr:GetAuthorizationToken"            
   
   DocRetrieverStackS3Bucket: # bucket holding the serverless template file
     Type: AWS::S3::Bucket 
@@ -88,39 +66,57 @@ Resources:
       CidrBlock: 10.0.0.0/20
       Tags:
        - Key: stack
-         Value: psv 
+         Value: psv
+       - Key: Name
+          Value: !Ref AWS::StackName   
 
   MountTargetSubnetOne:
     Type: AWS::EC2::Subnet
     Properties:
       CidrBlock: 10.0.0.0/24
       VpcId: !Ref MountTargetVPC
-      AvailabilityZone: "us-east-1a"
+      AvailabilityZone:
+        Fn::Select:
+         - 0
+         - Fn::GetAZs: ""
+      CidrBlock: 10.0.3.0/24
+      MapPublicIpOnLaunch: false
       Tags:
-       - Key: stack
-         Value: psv
+        - Key: Name
+          Value: !Join ["-", [!Ref "AWS::StackName","subnet-one"]]
 
-  # PublicSubnet1:
-  #   Type: AWS::EC2::Subnet
-  #   Properties:
-  #     VpcId: !Ref MountTargetVPC
-  #     AvailabilityZone:
-  #       Fn::Select:
-  #        - 0
-  #        - Fn::GetAZs: ""
-  #     CidrBlock: 10.0.3.0/24
-  #     MapPublicIpOnLaunch: true
-  #     Tags:
-  #      - Key: stack
-  #        Value: psv
- 
+  MountTargetSubnetTwo:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MountTargetVPC
+      AvailabilityZone:
+        Fn::Select:
+         - 1
+         - Fn::GetAZs: ""
+      CidrBlock: 10.0.2.0/24
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [!Ref "AWS::StackName","subnet-two"]]
+  
+  privateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref MountTargetVPC
+  privateSubnetOneRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref MountTargetSubnetOne
+      RouteTableId: !Ref privateRouteTable
+  privateSubnetTwoRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref MountTargetSubnetTwo
+      RouteTableId: !Ref privateRouteTable
+
+
   FileSystemResource:
     Type: 'AWS::EFS::FileSystem'
-    Properties:
-      PerformanceMode: generalPurpose
-      FileSystemTags:
-        - Key: stack
-          Value: psv
 
   MountTarget1:
     Type: AWS::EFS::MountTarget
@@ -128,68 +124,32 @@ Resources:
       FileSystemId: !Ref FileSystemResource
       SubnetId: !Ref MountTargetSubnetOne
       SecurityGroups:
-      - !GetAtt MountTargetVPC.DefaultSecurityGroup
- 
-  AccessPointResource:
-    Type: 'AWS::EFS::AccessPoint'
+        - !GetAtt MountTargetVPC.DefaultSecurityGroup
+
+  MountTarget2:
+    Type: AWS::EFS::MountTarget
     Properties:
       FileSystemId: !Ref FileSystemResource
-      RootDirectory:
-        Path: "/psv_efs"
+      SubnetId: !Ref MountTargetSubnetTwo
+      SecurityGroups:
+        - !GetAtt MountTargetVPC.DefaultSecurityGroup      
   
-  MountAccessPointResource:
-    Type: 'AWS::EFS::AccessPoint'
+  EfsAccessPoint:
+    Type: AWS::EFS::AccessPoint
     Properties:
       FileSystemId: !Ref FileSystemResource
+      PosixUser:
+        Uid: "1001"
+        Gid: "1001"
       RootDirectory:
-        Path: "/psv_root"      
-  
-  # internetGateway:
-  #   Type: AWS::EC2::InternetGateway
-  #   Properties:
-  #     Tags:
-  #       - Key: stack
-  #         Value: psv
-
-  # gatewayToInternet:
-  #   Type: AWS::EC2::VPCGatewayAttachment
-  #   Properties:
-  #     VpcId: !Ref MountTargetVPC
-  #     InternetGatewayId: !Ref internetGateway
-
-  # publicRouteTable:
-  #   Type: AWS::EC2::RouteTable
-  #   Properties:
-  #     VpcId: !Ref MountTargetVPC
-
-  # publicRoute:
-  #   Type: AWS::EC2::Route
-  #   DependsOn: gatewayToInternet
-  #   Properties:
-  #     RouteTableId: !Ref publicRouteTable
-  #     DestinationCidrBlock: 0.0.0.0/0
-  #     GatewayId: !Ref internetGateway
-
-  # publicSubnet1RouteTableAssociation:
-  #   Type: AWS::EC2::SubnetRouteTableAssociation
-  #   Properties:
-  #     SubnetId: !Ref PublicSubnet1
-  #     RouteTableId: !Ref publicRouteTable
-
-
+        CreationInfo:
+          OwnerGid: "1001"
+          OwnerUid: "1001"
+          Permissions: "755"
+        Path: "/efs-nodejs-storage"
 
 
 Outputs:
-  # AccessPointResourceArn:
-  #   Description: "The EFS access point resource"
-  #   Value: !GetAtt AccessPointResource.Arn
-  #   Export:
-  #     Name: 'AccessPointResourceArn'
-  MountAccessPointResourceArn:
-    Description: "The EFS access point resource"
-    Value: !GetAtt MountAccessPointResource.Arn
-    Export:
-      Name: 'MountAccessPointResourceArn'    
   PrivateSecurityGroup:
     Description: "The PrivateSecurityGroup resource"
     Value: !GetAtt MountTargetVPC.DefaultSecurityGroup
@@ -199,5 +159,34 @@ Outputs:
     Description: "The MountTargetSubnetOne resource"
     Value: !Ref MountTargetSubnetOne
     Export:
-      Name: 'PrivateSubnetOne'    
-
+      Name: 'PrivateSubnetOne'
+  PrivateSubnetTwo:
+    Description: "The MountTargetSubnetTwo resource"
+    Value: !Ref MountTargetSubnetTwo
+    Export:
+      Name: 'PrivateSubnetTwo'        
+  MountTargetVpcID:
+    Description: VPC ID
+    Value: !Ref MountTargetVPC
+    Export:
+      Name: "MountTargetVpcID"
+  FileSystemResourceId:
+    Description: File system ID
+    Value: !Ref FileSystemResource
+    Export:
+      Name: "FileSystemResourceId"
+  MountTarget1:
+    Description: Mount point A ID
+    Value: !Ref MountTarget1
+    Export:
+      Name: "MountTarget1"
+  MountTarget2:
+    Description: Mount point B ID
+    Value: !Ref MountTarget2
+    Export:
+      Name: "MountTarget2"
+  EfsAccessPointArn:
+    Description: Access point ARN
+    Value: !GetAtt EfsAccessPoint.Arn
+    Export:
+      Name: "EfsAccessPointArn"

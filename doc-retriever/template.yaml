@@ -22,7 +22,7 @@ Parameters:
     Description: The nodejs Environment.
   EFSpath:
     Type: String
-    Default: /mnt/efs0
+    Default: "/mnt/efs0"
 
 
 
@@ -30,10 +30,12 @@ Resources:
   GrantDocRetrieverFunction:
     Type: AWS::Serverless::Function
     Handler: ./grant-doc-retriever/app.lambdaHandler
-    CodeUri: ./
     Properties:
+      CodeUri: ./
+      Description: Process the bulk USPTO grants files
       PackageType: Image
       MemorySize: 10240
+      Tracing: Active
       ImageUri: !Join ['.', [!Ref AWS::AccountId, 'dkr.ecr', !Ref AWS::Region, 'amazonaws.com/', !Ref DocRetrieverRepo]]
       Environment:
         Variables:
@@ -42,7 +44,6 @@ Resources:
           PSV_AWS_REGION: !Ref AwsRegion
           EFS_PATH: !Ref EFSpath
           NODE_ENV: !Ref NodeEnv
-
       Events:
         DocRetrieverEvent:
           Type: Api
@@ -53,39 +54,23 @@ Resources:
           Type: Schedule
           Properties:
             Schedule: cron(59 23 ? * 3 *)
-      
       FileSystemConfigs:
-        - Arn: 
-            Fn::ImportValue: MountAccessPointResourceArn      
-          LocalMountPath: !Ref EFSpath
-      
+        - LocalMountPath: !Ref EFSpath
+          Arn: 
+            Fn::ImportValue: EfsAccessPointArn
       VpcConfig:
         SecurityGroupIds:
-          - Fn::ImportValue: PrivateSecurityGroup
+          - Fn::ImportValue: 
+                "PrivateSecurityGroup"
         SubnetIds:
-          - Fn::ImportValue: PrivateSubnetOne
-
+          - Fn::ImportValue: 
+                "PrivateSubnetOne"
+          - Fn::ImportValue: 
+                "PrivateSubnetTwo"       
       Policies:
-      - Statement:
-        - Sid: AWSLambdaVPCAccessExecutionRole
-          Effect: Allow
-          Action:
-            - logs:CreateLogGroup
-            - logs:CreateLogStream
-            - logs:PutLogEvents
-            - ec2:CreateNetworkInterface
-            - ec2:DescribeNetworkInterfaces
-            - ec2:DeleteNetworkInterface
-          Resource: "*"
-        
-        - Sid: AmazonElasticFileSystemClientFullAccess
-          Effect: Allow
-          Action:
-            - elasticfilesystem:ClientMount
-            - elasticfilesystem:ClientRootAccess
-            - elasticfilesystem:ClientWrite
-            - elasticfilesystem:DescribeMountTargets
-          Resource: "*"
+        - AWSXRayDaemonWriteAccess
+        - AWSLambdaVPCAccessExecutionRole
+        - AmazonElasticFileSystemClientReadWriteAccess
 
     Metadata:
       DockerTag: grant-doc-retriever
