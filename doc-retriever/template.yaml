@@ -8,12 +8,6 @@ Globals:
     Timeout: 900
 
 Parameters:
-  AwsAccessKeyId:
-    Type: String
-    Description: AWS access key Id.
-  AwsSecretAccessKey:
-    Type: String
-    Description: AWS key secret.
   AwsRegion:
     Type: String
     Description: The AWS Region.
@@ -31,7 +25,7 @@ Resources:
     Timeout: 900
     Properties:
       CodeUri: ./
-      Description: Process the bulk USPTO grants files
+      Description: Process the USPTO bulk grant files
       PackageType: Image
       MemorySize: 10240
       Tracing: Active
@@ -48,8 +42,6 @@ Resources:
         ]
       Environment:
         Variables:
-          PSV_AWS_ACCESS_KEY_ID: !Ref AwsAccessKeyId
-          PSV_AWS_SECRET_ACCESS_KEY: !Ref AwsSecretAccessKey
           PSV_AWS_REGION: !Ref AwsRegion
           EFS_PATH: !Ref EFSpath
           NODE_ENV: !Ref NodeEnv
@@ -88,9 +80,13 @@ Resources:
     Type: AWS::Serverless::Function
     Handler: app.lambdaHandler
     CodeUri: ./application-doc-retriever
+    Timeout: 900
     Properties:
-      MemorySize: 10240
+      CodeUri: ./
+      Description: Process the USPTO bulk patent application files
       PackageType: Image
+      MemorySize: 10240
+      Tracing: Active
       ImageUri:
         !Join [
           ".",
@@ -104,9 +100,8 @@ Resources:
         ]
       Environment:
         Variables:
-          PSV_AWS_ACCESS_KEY_ID: !Ref AwsAccessKeyId
-          PSV_AWS_SECRET_ACCESS_KEY: !Ref AwsSecretAccessKey
           PSV_AWS_REGION: !Ref AwsRegion
+          EFS_PATH: !Ref EFSpath
           NODE_ENV: !Ref NodeEnv
       Events:
         DocRetrieverEvent:
@@ -118,6 +113,22 @@ Resources:
           Type: Schedule
           Properties:
             Schedule: cron(59 23 ? * 5 *)
+      FileSystemConfigs:
+        - LocalMountPath: !Ref EFSpath
+          Arn:
+            Fn::ImportValue: EfsAccessPointArn
+      VpcConfig:
+        SecurityGroupIds:
+          - Fn::ImportValue: "PsvPrivateSecurityGroup"
+        SubnetIds:
+          - Fn::ImportValue: "PsvPrivateSubnetOne"
+          - Fn::ImportValue: "PsvPrivateSubnetTwo"
+      Policies:
+        - AWSXRayDaemonWriteAccess
+        - AWSLambdaVPCAccessExecutionRole
+        - AmazonElasticFileSystemClientReadWriteAccess
+        - AmazonS3FullAccess
+
     Metadata:
       DockerTag: app-doc-retriever
       DockerContext: ./
