@@ -64,19 +64,28 @@ Resources:
           - Fn::ImportValue: PrivateSecurityGroup
         SubnetIds:
           - Fn::ImportValue: PrivateSubnetOne
-          
+
       Policies:
       - Statement:
-        - Sid: AllowAccessToVPCNetwork
+        - Sid: AWSLambdaVPCAccessExecutionRole
           Effect: Allow
           Action:
-          - logs:CreateLogGroup
-          - logs:CreateLogStream
-          - logs:PutLogEvents
-          - ec2:CreateNetworkInterface,
-          - ec2:DescribeNetworkInterfaces
-          - ec2:DeleteNetworkInterface
-
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            - ec2:CreateNetworkInterface
+            - ec2:DescribeNetworkInterfaces
+            - ec2:DeleteNetworkInterface
+          Resource: "*"
+        
+        - Sid: AmazonElasticFileSystemClientFullAccess
+          Effect: Allow
+          Action:
+            - elasticfilesystem:ClientMount
+            - elasticfilesystem:ClientRootAccess
+            - elasticfilesystem:ClientWrite
+            - elasticfilesystem:DescribeMountTargets
+          Resource: "*"
 
     Metadata:
       DockerTag: grant-doc-retriever
