@@ -18,7 +18,7 @@ const initUtils = (axiosLib, extractLib, AWSLib, tmpdir) => {
     extract = extractLib;
     AWS = AWSLib;
     _TMP_DIR = tmpdir;
-    s3 = new AWS.S3({ accessKeyId: process.env.PSV_AWS_ACCESS_KEY_ID, secretAccessKey: process.env.PSV_AWS_SECRET_ACCESS_KEY, region: process.env.PSV_AWS_REGION });
+    s3 = new AWS.S3({ region: process.env.PSV_AWS_REGION });
 }
 
 /**

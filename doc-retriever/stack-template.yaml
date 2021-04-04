@@ -53,11 +53,10 @@ Resources:
               - s3:GetObjectVersion
             Resource:
               - arn:aws:s3:::uspto-documents-storage/*
-          - Sid: ReadWrite
+          - Sid: FullControl
             Effect: Allow
             Principal:
-              AWS:
-                !Join [":", ["arn:aws:iam:", !Ref AWS::AccountId, user/psv_app]]
+              AWS: !Ref AWS::AccountId
             Action:
               - s3:*
             Resource:
