@@ -1,119 +1,116 @@
-const axios = require('axios')
-const moment = require('moment');
 const fs = require('fs');
+const process = require('process');
 const path = require('path');
-const extract = require('extract-zip');
 const readline = require('readline');
-let response;
+const moment = require('moment');
+const convert = require('xml-js');
+const axios = require('axios');
+const extract = require('extract-zip');
+const AWS = require('aws-sdk');
 
-// TODO: IMPLEMENT CORRECTLY
+const { initUtils, extractXmlFile, downloadFile, uploadFile } = require('../grant-doc-retriever/utils/utils');
+// eslint-disable-next-line no-undef
+let EFS_PATH;
+if (process.env.EFS_PATH) 
+    EFS_PATH =  path.resolve(process.env.EFS_PATH.trim());
+else
+    EFS_PATH = path.resolve('tmp')
 
-async function downloadFile(fileDate) {
-    console.log('I am looking for file date', fileDate.format('YYYY-MM-DD'));
-
-    const GRANTS_FILE_URL = `https://bulkdata.uspto.gov/data/patent/grant/redbook/fulltext/${fileDate.format('YYYY')}/ipg${fileDate.format('YYMMDD')}.zip`
-    console.log('Connecting …')
-    const { data, headers } = await axios({
-        url: GRANTS_FILE_URL,
-        method: 'GET',
-        responseType: 'stream'
-    })
-    const totalLength = headers['content-length']
-
-    console.log('Starting download')
-
-    if (!fs.existsSync('./tmp')) {
-        fs.mkdirSync('./tmp');
-    }
-    if (!fs.existsSync('./tmp/docs')) {
-        fs.mkdirSync('./tmp/docs');
-    }
-    if (!fs.existsSync('./tmp/seq')) {
-        fs.mkdirSync('./tmp/seq');
-    }
-    const writer = fs.createWriteStream(
-        path.resolve(__dirname, 'tmp', `ipg${fileDate.format('YYMMDD')}.zip`)
-    )
-
-    data.on('data', (chunk) => progressBar.tick(chunk.length))
-    data.pipe(writer)
-    return new Promise((resolve, reject) => {
-        writer.on('finish', resolve)
-        writer.on('error', reject)
-    })
+if (!fs.existsSync(EFS_PATH)) {
+    fs.mkdirSync(EFS_PATH);
 }
 
+const _TMP_DIR = path.resolve(EFS_PATH, Date.now().toString());
 
-async function unpackFile(fileDate) {
-    const fileLocation = path.resolve(__dirname, 'tmp', `ipg${fileDate.format('YYMMDD')}.zip`);
-    const fileName = path.resolve(__dirname, 'tmp', `ipg${fileDate.format('YYMMDD')}.xml`);
-    path.resolve(__dirname, 'tmp')
+/* Init the utils dependencies */
+initUtils(axios, extract, AWS, _TMP_DIR);
 
-    await extract(fileLocation, { dir: path.resolve(__dirname, 'tmp') })
-    console.log('Extraction complete')
+
+/**
+ * Extracts all the relative patent and sequence files and applications from
+ * the Bulk XML file
+ * @param {*} xmlFileName 
+ */
+async function processXmlFile(xmlFileName) {
+    const fullFilePath = path.resolve(_TMP_DIR, xmlFileName);
+    console.log(`Processing XML file ${fullFilePath}`);
 
     const readInterface = readline.createInterface({
-        input: fs.createReadStream(fileName),
+        input: fs.createReadStream(fullFilePath),
         console: false
     });
-    
-    let xmlString = '';
-    readInterface.on('line', function (line) {
-        if (line.startsWith('<?xml version=') && xmlString) {
-            var convert = require('xml-js');
-            var result = convert.xml2json(xmlString, { compact: true, spaces: 0 });
-            try {
 
+    readInterface.on('error', function (err) {
+        console.error(`Error occurred while reading XML file stream ${fullFilePath}`, err);
+        throw err;
+    });
+
+    readInterface.on('close', function () {
+        console.log(`Completed reading XML file stream ${fullFilePath}`);
+    });
+
+    let xmlString = '';
+    let linesCount = 0;
+    let parsedDocsCount = 0;
+    let extractedDocsCount = 0;
+    let skippedDocsCount = 0;
+    let extractedSeqDocsCount = 0;
+    // TODO: UPDATE THIS SECTION TO LOOK AT APPLICATION'S data
+    for await (const line of readInterface) {
+        linesCount++;
+        if (line.startsWith('<?xml version=') && xmlString != '') {
+            parsedDocsCount++;
+            let result;
+            try {
+                result = convert.xml2json(xmlString, { compact: true, spaces: 0 });
                 result = JSON.parse(result);
                 if (result['sequence-cwu']) {
-
-                    const docId = result['sequence-cwu']['publication-reference']['document-id']['doc-number']['_text']
-                    let path = path.resolve(__dirname, 'tmp', 'seq', `${docId}.json`);
-                    fs.writeFileSync(path, JSON.stringify(result))
+                    const docId = result['sequence-cwu']['publication-reference']['document-id']['doc-number']['_text'].replace(/^0+/, "");
+                    await uploadFile(`seq/${docId}.xml`, xmlString);
+                    extractedSeqDocsCount++;
                 } else {
-                    if(!result['us-patent-grant']['us-bibliographic-data-grant']['classifications-ipcr']) {
-                        // noop
-                    } else{
-                        let classifications = result['us-patent-grant']['us-bibliographic-data-grant']['classifications-ipcr']['classification-ipcr'];
-                        let isCorrectClass = false;
-                        if(classifications.length)
-                            isCorrectClass= classifications.some(c => c['section']['_text'] == 'A' || c['section']['_text'] == 'C');
-                        else
-                            isCorrectClass= classifications['section']['_text'] == 'A' || classifications['section']['_text'] == 'C';
-                        if(isCorrectClass){
-                            const docId = result['us-patent-grant']['us-bibliographic-data-grant']['publication-reference']['document-id']['doc-number']['_text']
-                            let path = path.resolve(__dirname, 'tmp', 'docs', `${docId}.json`);
-                            fs.writeFileSync(path, JSON.stringify(result))
+                    if (result['us-patent-application']['us-bibliographic-data-application']['classifications-ipcr']) {
+                        let classifications = result['us-patent-grant']['us-bibliographic-data-application']['classifications-ipcr']['classification-ipcr'];
+                        let shouldUploadApplicationFile = false;
+                        if (classifications.length) {
+                            shouldUploadApplicationFile = classifications.some(c => c['section']['_text'] == 'A' || c['section']['_text'] == 'C');
+                        } else {
+                            shouldUploadApplicationFile = classifications['section']['_text'] == 'A' || classifications['section']['_text'] == 'C';
                         }
+                        if (shouldUploadApplicationFile) {
+                            const docId = result['us-patent-application']['us-bibliographic-data-application']['publication-reference']['document-id']['doc-number']['_text'].replace(/^0+/, "");
+                            await uploadFile(`docs/${docId}.xml`, xmlString);
+                            extractedDocsCount++;
+                        } else {
+                            skippedDocsCount++;
+                        }
+                    } else {
+                        skippedDocsCount++;
                     }
                 }
             } catch (err) {
-                console.log(err, result['us-patent-grant']['us-bibliographic-data-grant']['classifications-ipcr']);
+                console.log(err, result, xmlString);
+                skippedDocsCount++;
+            } finally {
+                xmlString = ''
             }
-            xmlString = ''
         }
         xmlString += line;
+    }
 
-    });
-
-    return new Promise((resolve, reject)=>{
-        readInterface.on('error', function (err) {
-            console.error(err);
-            reject(err)
-        });
-        readInterface.on('end', function (line) {
-            console.log('done reading');
-            resolve()
-        });
-
-    })
+    console.log(`Completed processing XML file ${fullFilePath}. 
+    Total processed lines: ${linesCount}
+    Total parsed docs: ${parsedDocsCount}
+    Extracted docs: ${extractedDocsCount}
+    Extracted seq docs: ${extractedSeqDocsCount}
+    Skipped docs: ${skippedDocsCount}`);
 }
 
 
 /**
  *
  * Event doc: https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html#api-gateway-simple-proxy-for-lambda-input-format
- * @param {Object} event - API Gateway Lambda Proxy Input Format
+ * @param {Object} event - API Gateway Lambda Proxy Input Format or the cloudwatch event
  *
  * Context doc: https://docs.aws.amazon.com/lambda/latest/dg/nodejs-prog-model-context.html 
  * @param {Object} context
@@ -122,31 +119,38 @@ async function unpackFile(fileDate) {
  * @returns {Object} object - API Gateway Lambda Proxy Output Format
  * 
  */
-exports.lambdaHandler = async (event, context) => {
-    console.log('Handler Invoked with event', event);
-    return "ok";
-    console.log('Handling event', JSON.stringify(event))
-    const requestBody = JSON.parse(event.body);
-    let year = requestBody.year;
-    let week = requestBody.week;
-    console.log(year, week)
-    const fileDate = moment().year(year).isoWeek(0).add(week, 'week').day('Tuesday');
-    // await downloadFile(fileDate)
-    await unpackFile(fileDate)
+exports.lambdaHandler = async (event) => {
+    console.debug('Handling event ', event);
+    console.debug(`Current NODE_ENV = ${process.env.NODE_ENV}`);
+    const startTime = Date.now();
+    let fileDate;
 
-
-    // US008062640B2
-    // US009175093B2
-
-    
-    response = {
-        'statusCode': 200,
-        'body': JSON.stringify({
-            message: 'hello world',
-            // location: ret.data.trim()
-        })
+    /*  Determine if the event is an API event or a CloudWatch 
+        scheduled event. The API events contain the processing 
+        date in the request body but scheduled events will 
+        process the current week's file*/
+    if (event.body) {
+        const requestBody = JSON.parse(event.body);
+        let year = requestBody.year;
+        let week = requestBody.week;
+        fileDate = moment().year(year).isoWeek(0).add(week, 'week').day('Thursday');
+    } else {
+        fileDate = moment().day('Thursday');
     }
-    return new Promise((resolve, reject) => {
-        setTimeout(() => resolve(response), 2000)
-    });
+
+    const compressedFileName = `ipa${fileDate.format('YYMMDD')}.zip`;
+    const xmlFileName = `ipa${fileDate.format('YYMMDD')}.xml`;
+    const fileDownloadUrl = `https://bulkdata.uspto.gov/data/patent/application/redbook/fulltext/${fileDate.format('YYYY')}/ipa${fileDate.format('YYMMDD')}.zip`
+
+    console.log(`Started processing application file ${compressedFileName} for date ${fileDate.toDate()}`);
+
+    await downloadFile(compressedFileName, fileDownloadUrl);
+    await extractXmlFile(compressedFileName);
+    await processXmlFile(xmlFileName);
+
+
+    console.log(`Deleting the tmp dir...`);
+    fs.rmdirSync(_TMP_DIR, { recursive: true });
+    console.log(`Completed processing the grant file ${compressedFileName} for date ${fileDate.toDate()} in ${Date.now() - startTime} ms`);
+    return new Promise((resolve) => { resolve('Done') });
 }

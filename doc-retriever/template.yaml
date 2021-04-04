@@ -122,14 +122,6 @@ Resources:
       DockerContext: ./
       Dockerfile: ./application-doc-retriever/Dockerfile
 
-  # APIGatewayIntegration:
-  #   Type: 'AWS::ApiGatewayV2::Integration'
-  #   Properties:
-  #     ApiId: !Ref GrantDocRetrieverFunction
-  #     Description: Lambda Integration
-  #     IntegrationType: AWS
-  #     TimeoutInMillis: 900000
-
 Outputs:
   GrantDocRetrieverApi:
     Description: "API Gateway endpoint URL for Prod stage for GrantDocRetrieverApi function"
