@@ -24,6 +24,15 @@ Parameters:
     Type: String
     Default: /mnt/efs0
 
+
+      VpcConfig:
+        SecurityGroupIds:
+          - sg-085912345678492fb
+        SubnetIds:
+          - subnet-071f712345678e7c8
+          - subnet-07fd123456788a036
+
+
 Resources:
   GrantDocRetrieverFunction:
     Type: AWS::Serverless::Function
@@ -56,6 +65,12 @@ Resources:
         - Arn: 
             Fn::ImportValue: AccessPointResourceArn      
           LocalMountPath: !Ref EFSpath
+      
+      VpcConfig:
+        SecurityGroupIds:
+          - Fn::ImportValue: PrivateSecurityGroup
+        SubnetIds:
+          - Fn::ImportValue: PrivateSubnetOne
 
     Metadata:
       DockerTag: grant-doc-retriever

@@ -85,7 +85,7 @@ Resources:
   MountTargetVPC:
     Type: AWS::EC2::VPC
     Properties:
-      CidrBlock: 10.0.0.0/20
+      CidrBlock: 10.0.0.0/16
       Tags:
        - Key: stack
          Value: psv      
@@ -109,6 +109,20 @@ Resources:
       Tags:
        - Key: stack
          Value: psv
+
+  # PublicSubnet1:
+  #   Type: AWS::EC2::Subnet
+  #   Properties:
+  #     VpcId: !Ref MountTargetVPC
+  #     AvailabilityZone:
+  #       Fn::Select:
+  #        - 0
+  #        - Fn::GetAZs: ""
+  #     CidrBlock: 10.0.3.0/24
+  #     MapPublicIpOnLaunch: true
+  #     Tags:
+  #      - Key: stack
+  #        Value: psv
  
   FileSystemResource:
     Type: 'AWS::EFS::FileSystem'
@@ -139,6 +153,41 @@ Resources:
           OwnerUid: "1000"
           Permissions: "0777"
         Path: "/psv_efs"
+  
+  # internetGateway:
+  #   Type: AWS::EC2::InternetGateway
+  #   Properties:
+  #     Tags:
+  #       - Key: stack
+  #         Value: psv
+
+  # gatewayToInternet:
+  #   Type: AWS::EC2::VPCGatewayAttachment
+  #   Properties:
+  #     VpcId: !Ref MountTargetVPC
+  #     InternetGatewayId: !Ref internetGateway
+
+  # publicRouteTable:
+  #   Type: AWS::EC2::RouteTable
+  #   Properties:
+  #     VpcId: !Ref MountTargetVPC
+
+  # publicRoute:
+  #   Type: AWS::EC2::Route
+  #   DependsOn: gatewayToInternet
+  #   Properties:
+  #     RouteTableId: !Ref publicRouteTable
+  #     DestinationCidrBlock: 0.0.0.0/0
+  #     GatewayId: !Ref internetGateway
+
+  # publicSubnet1RouteTableAssociation:
+  #   Type: AWS::EC2::SubnetRouteTableAssociation
+  #   Properties:
+  #     SubnetId: !Ref PublicSubnet1
+  #     RouteTableId: !Ref publicRouteTable
+
+
+
 
 Outputs:
   AccessPointResourceArn:
@@ -146,4 +195,14 @@ Outputs:
     Value: !GetAtt AccessPointResource.Arn
     Export:
       Name: 'AccessPointResourceArn'
-    
+  PrivateSecurityGroup:
+    Description: "The PrivateSecurityGroup resource"
+    Value: !GetAtt MountTargetVPC.DefaultSecurityGroup
+    Export:
+      Name: 'PrivateSecurityGroup'
+  PrivateSubnetOne:
+    Description: "The MountTargetSubnetOne resource"
+    Value: !Ref MountTargetSubnetOne
+    Export:
+      Name: 'PrivateSubnetOne'    
+
