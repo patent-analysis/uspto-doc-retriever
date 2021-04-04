@@ -1,21 +1,21 @@
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: "2010-09-09"
 
 Description: Cloudformation resource template.
 
 Resources:
   DocRetrieverRepo: # repo holding the serverless container image for grant docs retriever
     Type: AWS::ECR::Repository
-    Properties: 
+    Properties:
       RepositoryName: "uspto-grants-doc-repository"
-      RepositoryPolicyText: 
+      RepositoryPolicyText:
         Version: "2012-10-17"
-        Statement: 
-          - 
-            Sid: AllowPushPull
+        Statement:
+          - Sid: AllowPushPull
             Effect: Allow
-            Principal: 
-              AWS: !Join [':', ['arn:aws:iam:', !Ref AWS::AccountId, user/psv_app]]
-            Action: 
+            Principal:
+              AWS:
+                !Join [":", ["arn:aws:iam:", !Ref AWS::AccountId, user/psv_app]]
+            Action:
               - "ecr:GetDownloadUrlForLayer"
               - "ecr:BatchGetImage"
               - "ecr:BatchCheckLayerAvailability"
@@ -24,21 +24,21 @@ Resources:
               - "ecr:UploadLayerPart"
               - "ecr:CompleteLayerUpload"
               - "ecr:GetAuthorizationToken"
-  
+
   DocRetrieverStackS3Bucket: # bucket holding the serverless template file
-    Type: AWS::S3::Bucket 
+    Type: AWS::S3::Bucket
     Properties:
       BucketName: doc-retriever-stack-bucket
       AccessControl: BucketOwnerFullControl
 
   DocStorageBucket:
-    Type: 'AWS::S3::Bucket'
+    Type: "AWS::S3::Bucket"
     Properties:
       BucketName: uspto-documents-storage
       AccessControl: BucketOwnerFullControl
-  
+
   DocStorageBucketPolicy:
-    Type: 'AWS::S3::BucketPolicy'
+    Type: "AWS::S3::BucketPolicy"
     Properties:
       Bucket: uspto-documents-storage
       PolicyDocument:
@@ -50,11 +50,12 @@ Resources:
               - s3:GetObject
               - s3:GetObjectVersion
             Resource:
-              - arn:aws:s3:::uspto-documents-storage/* 
+              - arn:aws:s3:::uspto-documents-storage/*
           - Sid: ReadWrite
             Effect: Allow
-            Principal: 
-              AWS: !Join [':', ['arn:aws:iam:', !Ref AWS::AccountId, user/psv_app]] 
+            Principal:
+              AWS:
+                !Join [":", ["arn:aws:iam:", !Ref AWS::AccountId, user/psv_app]]
             Action:
               - s3:*
             Resource:
@@ -65,25 +66,24 @@ Resources:
     Properties:
       CidrBlock: 10.0.0.0/20
       Tags:
-       - Key: stack
-         Value: psv
-       - Key: Name
-          Value: !Ref AWS::StackName   
+        - Key: stack
+          Value: psv
+        - Key: Name
+          Value: !Ref AWS::StackName
 
   MountTargetSubnetOne:
     Type: AWS::EC2::Subnet
     Properties:
-      CidrBlock: 10.0.0.0/24
+      CidrBlock: 10.0.3.0/24
       VpcId: !Ref MountTargetVPC
       AvailabilityZone:
         Fn::Select:
-         - 0
-         - Fn::GetAZs: ""
-      CidrBlock: 10.0.3.0/24
+          - 0
+          - Fn::GetAZs: ""
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
-          Value: !Join ["-", [!Ref "AWS::StackName","subnet-one"]]
+          Value: !Join ["-", [!Ref "AWS::StackName", "subnet-one"]]
 
   MountTargetSubnetTwo:
     Type: AWS::EC2::Subnet
@@ -91,14 +91,14 @@ Resources:
       VpcId: !Ref MountTargetVPC
       AvailabilityZone:
         Fn::Select:
-         - 1
-         - Fn::GetAZs: ""
+          - 1
+          - Fn::GetAZs: ""
       CidrBlock: 10.0.2.0/24
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
-          Value: !Join ["-", [!Ref "AWS::StackName","subnet-two"]]
-  
+          Value: !Join ["-", [!Ref "AWS::StackName", "subnet-two"]]
+
   privateRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
@@ -114,9 +114,8 @@ Resources:
       SubnetId: !Ref MountTargetSubnetTwo
       RouteTableId: !Ref privateRouteTable
 
-
   FileSystemResource:
-    Type: 'AWS::EFS::FileSystem'
+    Type: "AWS::EFS::FileSystem"
 
   MountTarget1:
     Type: AWS::EFS::MountTarget
@@ -132,8 +131,8 @@ Resources:
       FileSystemId: !Ref FileSystemResource
       SubnetId: !Ref MountTargetSubnetTwo
       SecurityGroups:
-        - !GetAtt MountTargetVPC.DefaultSecurityGroup      
-  
+        - !GetAtt MountTargetVPC.DefaultSecurityGroup
+
   EfsAccessPoint:
     Type: AWS::EFS::AccessPoint
     Properties:
@@ -148,23 +147,22 @@ Resources:
           Permissions: "755"
         Path: "/efs-nodejs-storage"
 
-
 Outputs:
   PrivateSecurityGroup:
     Description: "The PrivateSecurityGroup resource"
     Value: !GetAtt MountTargetVPC.DefaultSecurityGroup
     Export:
-      Name: 'PrivateSecurityGroup'
+      Name: "PrivateSecurityGroup"
   PrivateSubnetOne:
     Description: "The MountTargetSubnetOne resource"
     Value: !Ref MountTargetSubnetOne
     Export:
-      Name: 'PrivateSubnetOne'
+      Name: "PrivateSubnetOne"
   PrivateSubnetTwo:
     Description: "The MountTargetSubnetTwo resource"
     Value: !Ref MountTargetSubnetTwo
     Export:
-      Name: 'PrivateSubnetTwo'        
+      Name: "PrivateSubnetTwo"
   MountTargetVpcID:
     Description: VPC ID
     Value: !Ref MountTargetVPC

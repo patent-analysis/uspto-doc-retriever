@@ -1,4 +1,4 @@
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: >
   USPTO grant and application bulk document retriever SAM stack
@@ -24,8 +24,6 @@ Parameters:
     Type: String
     Default: "/mnt/efs0"
 
-
-
 Resources:
   GrantDocRetrieverFunction:
     Type: AWS::Serverless::Function
@@ -36,7 +34,17 @@ Resources:
       PackageType: Image
       MemorySize: 10240
       Tracing: Active
-      ImageUri: !Join ['.', [!Ref AWS::AccountId, 'dkr.ecr', !Ref AWS::Region, 'amazonaws.com/', !Ref DocRetrieverRepo]]
+      ImageUri:
+        !Join [
+          ".",
+          [
+            !Ref AWS::AccountId,
+            "dkr.ecr",
+            !Ref AWS::Region,
+            "amazonaws.com/",
+            !Ref DocRetrieverRepo,
+          ],
+        ]
       Environment:
         Variables:
           PSV_AWS_ACCESS_KEY_ID: !Ref AwsAccessKeyId
@@ -56,17 +64,14 @@ Resources:
             Schedule: cron(59 23 ? * 3 *)
       FileSystemConfigs:
         - LocalMountPath: !Ref EFSpath
-          Arn: 
+          Arn:
             Fn::ImportValue: EfsAccessPointArn
       VpcConfig:
         SecurityGroupIds:
-          - Fn::ImportValue: 
-                "PrivateSecurityGroup"
+          - Fn::ImportValue: "PrivateSecurityGroup"
         SubnetIds:
-          - Fn::ImportValue: 
-                "PrivateSubnetOne"
-          - Fn::ImportValue: 
-                "PrivateSubnetTwo"       
+          - Fn::ImportValue: "PrivateSubnetOne"
+          - Fn::ImportValue: "PrivateSubnetTwo"
       Policies:
         - AWSXRayDaemonWriteAccess
         - AWSLambdaVPCAccessExecutionRole
@@ -74,9 +79,9 @@ Resources:
 
     Metadata:
       DockerTag: grant-doc-retriever
-      DockerContext: ./ 
+      DockerContext: ./
       Dockerfile: ./grant-doc-retriever/Dockerfile
-  
+
   AppDocRetrieverFunction:
     Type: AWS::Serverless::Function
     Handler: app.lambdaHandler
@@ -84,7 +89,17 @@ Resources:
     Properties:
       MemorySize: 10240
       PackageType: Image
-      ImageUri: !Join ['.', [!Ref AWS::AccountId, 'dkr.ecr', !Ref AWS::Region, 'amazonaws.com/', !Ref DocRetrieverRepo]]
+      ImageUri:
+        !Join [
+          ".",
+          [
+            !Ref AWS::AccountId,
+            "dkr.ecr",
+            !Ref AWS::Region,
+            "amazonaws.com/",
+            !Ref DocRetrieverRepo,
+          ],
+        ]
       Environment:
         Variables:
           PSV_AWS_ACCESS_KEY_ID: !Ref AwsAccessKeyId
@@ -101,7 +116,6 @@ Resources:
           Type: Schedule
           Properties:
             Schedule: cron(59 23 ? * 5 *)
-
     Metadata:
       DockerTag: app-doc-retriever
       DockerContext: ./
@@ -125,4 +139,4 @@ Outputs:
     Value: !GetAtt AppDocRetrieverFunction.Arn
   AppDocRetrieverFunctionIamRole:
     Description: "Implicit IAM Role created for DocRetriever function"
-    Value: !GetAtt AppDocRetrieverFunctionRole.Arn    
+    Value: !GetAtt AppDocRetrieverFunctionRole.Arn
