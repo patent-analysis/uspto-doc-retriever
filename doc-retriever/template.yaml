@@ -56,7 +56,7 @@ Resources:
       
       FileSystemConfigs:
         - Arn: 
-            Fn::ImportValue: AccessPointResourceArn      
+            Fn::ImportValue: MountAccessPointResourceArn      
           LocalMountPath: !Ref EFSpath
       
       VpcConfig:

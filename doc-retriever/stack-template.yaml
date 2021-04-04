@@ -90,15 +90,15 @@ Resources:
        - Key: stack
          Value: psv      
  
-  EfsSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      VpcId:
-        Ref: MountTargetVPC
-      GroupDescription: "mnt target sg"
-      SecurityGroupEgress:
-      - IpProtocol: -1
-        CidrIp: "0.0.0.0/0"
+  # EfsSecurityGroup:
+  #   Type: AWS::EC2::SecurityGroup
+  #   Properties:
+  #     VpcId:
+  #       Ref: MountTargetVPC
+  #     GroupDescription: "mnt target sg"
+  #     SecurityGroupEgress:
+  #     - IpProtocol: -1
+  #       CidrIp: "0.0.0.0/0"
 
   MountTargetSubnetOne:
     Type: AWS::EC2::Subnet
@@ -138,9 +138,9 @@ Resources:
       FileSystemId: !Ref FileSystemResource
       SubnetId: !Ref MountTargetSubnetOne
       SecurityGroups:
-      - !Ref EfsSecurityGroup
+      - !GetAtt MountTargetVPC.DefaultSecurityGroup
  
-  AccessPointResource:
+  MountAccessPointResource:
     Type: 'AWS::EFS::AccessPoint'
     Properties:
       FileSystemId: !Ref FileSystemResource
@@ -183,11 +183,11 @@ Resources:
 
 
 Outputs:
-  AccessPointResourceArn:
+  MountAccessPointResourceArn:
     Description: "The EFS access point resource"
-    Value: !GetAtt AccessPointResource.Arn
+    Value: !GetAtt MountAccessPointResource.Arn
     Export:
-      Name: 'AccessPointResourceArn'
+      Name: 'MountAccessPointResourceArn'
   PrivateSecurityGroup:
     Description: "The PrivateSecurityGroup resource"
     Value: !GetAtt MountTargetVPC.DefaultSecurityGroup
