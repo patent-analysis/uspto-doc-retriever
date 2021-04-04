@@ -64,7 +64,10 @@ async function processXmlFile(xmlFileName) {
                 result = convert.xml2json(xmlString, { compact: true, spaces: 0 });
                 result = JSON.parse(result);
                 if (result['sequence-cwu']) {
-                    const docId = result['sequence-cwu']['publication-reference']['document-id']['doc-number']['_text'].replace(/^0+/, "");
+                    const docNumber = result['sequence-cwu']['publication-reference']['document-id']['doc-number']['_text'].replace(/^0+/, "");
+                    const docKind = result['sequence-cwu']['publication-reference']['document-id']['kind']['_text'];
+                    const docId = `US${docNumber}${docKind}`;
+
                     await uploadFile(`seq/${docId}.xml`, xmlString);
                     extractedSeqDocsCount++;
                 } else {
@@ -77,7 +80,10 @@ async function processXmlFile(xmlFileName) {
                             shouldUploadGrantFile = classifications['section']['_text'] == 'A' || classifications['section']['_text'] == 'C';
                         }
                         if (shouldUploadGrantFile) {
-                            const docId = result['us-patent-grant']['us-bibliographic-data-grant']['publication-reference']['document-id']['doc-number']['_text'].replace(/^0+/, "");
+                            const docNumber = result['us-patent-grant']['us-bibliographic-data-grant']['publication-reference']['document-id']['doc-number']['_text'].replace(/^0+/, "");
+                            const docKind = result['us-patent-grant']['us-bibliographic-data-grant']['publication-reference']['document-id']['kind']['_text'];
+                            const docId = `US${docNumber}${docKind}`;
+                            
                             await uploadFile(`docs/${docId}.xml`, xmlString);
                             extractedDocsCount++;
                         } else {
