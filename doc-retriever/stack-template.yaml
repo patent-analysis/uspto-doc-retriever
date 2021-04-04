@@ -200,7 +200,7 @@ Resources:
     Properties:
       RouteTableId: !Ref PsvPrivateRouteTableOne
       DestinationCidrBlock: 0.0.0.0/0
-      GatewayId: !Ref NatGateway1
+      NatGatewayId: !Ref NatGateway1
   PsvPrivateRouteTableTwo:
     Type: AWS::EC2::RouteTable
     Properties:
@@ -214,7 +214,7 @@ Resources:
     Properties:
       RouteTableId: !Ref PsvPrivateRouteTableTwo
       DestinationCidrBlock: 0.0.0.0/0
-      GatewayId: !Ref NatGateway2
+      NatGatewayId: !Ref NatGateway2
       
   PsvPrivateSubnetOneRouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
