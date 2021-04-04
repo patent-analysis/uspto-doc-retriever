@@ -64,6 +64,20 @@ Resources:
           - Fn::ImportValue: PrivateSecurityGroup
         SubnetIds:
           - Fn::ImportValue: PrivateSubnetOne
+            Policies:
+      
+      Policies:
+      - Statement:
+        - Sid: AllowAccessToVPCNetwork
+          Effect: Allow
+          Action:
+          - logs:CreateLogGroup
+          - logs:CreateLogStream
+          - logs:PutLogEvents
+          - ec2:CreateNetworkInterface,
+          - ec2:DescribeNetworkInterfaces
+          - ec2:DeleteNetworkInterface
+
 
     Metadata:
       DockerTag: grant-doc-retriever
