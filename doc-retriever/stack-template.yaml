@@ -75,6 +75,19 @@ Resources:
           Value: psv
         - Key: Name
           Value: !Ref AWS::StackName
+         
+############### Internet Gateway  ###############
+  PsvInternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: stack
+          Value: psv
+  PsvInternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref PsvInternetGateway
+      VpcId: !Ref PsvVPC
 
 ###############     Public Subnets     ###############
   PsvPublicSubnetOne:
@@ -115,83 +128,17 @@ Resources:
   PsvPrivateSubnetTwo:
     Type: AWS::EC2::Subnet
     Properties:
+      CidrBlock: 10.0.2.0/24
       VpcId: !Ref PsvVPC
       AvailabilityZone:
         Fn::Select:
           - 1
           - Fn::GetAZs: ""
-      CidrBlock: 10.0.2.0/24
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
           Value: !Join ["-", [!Ref "AWS::StackName", "private-subnet-two"]]
-
-###############     Public Routing     ###############
-  DefaultPublicRoute:
-    Type: AWS::EC2::Route
-    DependsOn: PsvInternetGatewayAttachment
-    Properties:
-      RouteTableId: !Ref PsvPublicRouteTable
-      DestinationCidrBlock: 0.0.0.0/0
-      GatewayId: !Ref PsvInternetGateway
-  PsvPublicRouteTable:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      VpcId: !Ref PsvVPC
-      Tags:
-        - Key: Name
-          Value: !Join ["-", [!Ref "AWS::StackName", "public-routes"]]
-  PublicSubnetOneRouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId: !Ref PsvPublicRouteTable
-      SubnetId: !Ref PsvPublicSubnetOne
-  PublicSubnetTwoRouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId: !Ref PsvPublicRouteTable
-      SubnetId: !Ref PsvPublicSubnetTwo
-
-###############     Private Routing     ###############
-  DefaultPrivateRoute:
-    Type: AWS::EC2::Route
-    DependsOn: PsvInternetGatewayAttachment
-    Properties:
-      RouteTableId: !Ref PsvPrivateRouteTable
-      DestinationCidrBlock: 0.0.0.0/0
-      GatewayId: !Ref NatGateway1
-  PsvPrivateRouteTable:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      VpcId: !Ref PsvVPC
-      Tags:
-        - Key: Name
-          Value: !Join ["-", [!Ref "AWS::StackName", "private-routes"]]
-  PsvPrivateSubnetOneRouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      SubnetId: !Ref PsvPrivateSubnetOne
-      RouteTableId: !Ref PsvPrivateRouteTable
-  PsvPrivateSubnetTwoRouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      SubnetId: !Ref PsvPrivateSubnetTwo
-      RouteTableId: !Ref PsvPrivateRouteTable
-
-############### Internet Gateway  ###############
-  PsvInternetGateway:
-    Type: AWS::EC2::InternetGateway
-    Properties:
-      Tags:
-        - Key: stack
-          Value: psv
-  PsvInternetGatewayAttachment:
-    Type: AWS::EC2::VPCGatewayAttachment
-    Properties:
-      InternetGatewayId: !Ref PsvInternetGateway
-      VpcId: !Ref PsvVPC
-
-###############     NAT           ###############
+ ###############     NAT           ###############
   NatGateway1EIP:
     Type: AWS::EC2::EIP
     DependsOn: PsvInternetGatewayAttachment
@@ -212,6 +159,72 @@ Resources:
     Properties:
       AllocationId: !GetAtt NatGateway2EIP.AllocationId
       SubnetId: !Ref PsvPublicSubnetTwo
+
+###############     Public Routing     ###############
+  PsvPublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref PsvVPC
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [!Ref "AWS::StackName", "public-routes"]]
+  DefaultPublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: PsvInternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PsvPublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref PsvInternetGateway
+  PublicSubnetOneRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PsvPublicRouteTable
+      SubnetId: !Ref PsvPublicSubnetOne
+  PublicSubnetTwoRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PsvPublicRouteTable
+      SubnetId: !Ref PsvPublicSubnetTwo
+
+###############     Private Routing     ###############
+  PsvPrivateRouteTableOne:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref PsvVPC
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [!Ref "AWS::StackName", "private-routes-1"]]
+  DefaultPrivateRouteOne:
+    Type: AWS::EC2::Route
+    DependsOn: PsvInternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PsvPrivateRouteTableOne
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref NatGateway1
+  PsvPrivateRouteTableTwo:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref PsvVPC
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [!Ref "AWS::StackName", "private-routes-2"]]
+  DefaultPrivateRouteTwo:
+    Type: AWS::EC2::Route
+    DependsOn: PsvInternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PsvPrivateRouteTableTwo
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref NatGateway2    
+  PsvPrivateSubnetOneRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PsvPrivateSubnetOne
+      RouteTableId: !Ref PsvPrivateRouteTableOne
+  PsvPrivateSubnetTwoRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PsvPrivateSubnetTwo
+      RouteTableId: !Ref PsvPrivateRouteTableTwo
 
 ###############       EFS          ###############
   EfsFileSystem:
