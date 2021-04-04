@@ -196,7 +196,7 @@ Resources:
           Value: !Join ["-", [!Ref "AWS::StackName", "private-routes-1"]]
   DefaultPrivateRouteOne:
     Type: AWS::EC2::Route
-    DependsOn: PsvInternetGatewayAttachment
+    DependsOn: NatGateway1
     Properties:
       RouteTableId: !Ref PsvPrivateRouteTableOne
       DestinationCidrBlock: 0.0.0.0/0
@@ -210,11 +210,12 @@ Resources:
           Value: !Join ["-", [!Ref "AWS::StackName", "private-routes-2"]]
   DefaultPrivateRouteTwo:
     Type: AWS::EC2::Route
-    DependsOn: PsvInternetGatewayAttachment
+    DependsOn: NatGateway2
     Properties:
       RouteTableId: !Ref PsvPrivateRouteTableTwo
       DestinationCidrBlock: 0.0.0.0/0
-      GatewayId: !Ref NatGateway2    
+      GatewayId: !Ref NatGateway2
+      
   PsvPrivateSubnetOneRouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
