@@ -1,0 +1,312 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: Cloudformation PSV resources template.
+
+Resources:
+###############     Doc Retriever ECR Repo   ###############
+  DocRetrieverRepo:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: "uspto-doc-retriever-ecr"
+      RepositoryPolicyText:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowPushPull
+            Effect: Allow
+            Principal:
+              AWS:
+                !Join [":", ["arn:aws:iam:", !Ref AWS::AccountId, user/psv_app]]
+            Action:
+              - "ecr:GetDownloadUrlForLayer"
+              - "ecr:BatchGetImage"
+              - "ecr:BatchCheckLayerAvailability"
+              - "ecr:PutImage"
+              - "ecr:InitiateLayerUpload"
+              - "ecr:UploadLayerPart"
+              - "ecr:CompleteLayerUpload"
+              - "ecr:GetAuthorizationToken"
+
+###############     SAM Stack Template Bucket   ###############
+  DocRetrieverStackS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: uspto-psv-sam-stack-bucket
+      AccessControl: BucketOwnerFullControl
+
+###############     Document Storage Bucket   ###############
+  DocStorageBucket:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      BucketName: uspto-documents-storage
+      AccessControl: BucketOwnerFullControl
+  DocStorageBucketPolicy:
+    Type: "AWS::S3::BucketPolicy"
+    Properties:
+      Bucket: uspto-documents-storage
+      # LifecycleConfiguration:
+      #   Rules:
+      #     - Id: TransitionRule
+      #       Prefix: intelligent
+      #       Status: Enabled
+      #       Transitions:
+      #           StorageClass: INTELLIGENT_TIERING 
+      PolicyDocument:
+        Statement:
+          - Sid: PublicRead
+            Effect: Allow
+            Principal: "*"
+            Action:
+              - s3:GetObject
+              - s3:GetObjectVersion
+            Resource:
+              - arn:aws:s3:::uspto-documents-storage/*
+          - Sid: FullControl
+            Effect: Allow
+            Principal:
+              AWS: !Ref AWS::AccountId
+            Action:
+              - s3:*
+            Resource:
+              - arn:aws:s3:::uspto-documents-storage/*
+
+###############     VPC    ###############
+  PsvVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      CidrBlock: 10.0.0.0/20
+      Tags:
+        - Key: stack
+          Value: psv
+        - Key: Name
+          Value: !Ref AWS::StackName
+         
+############### Internet Gateway  ###############
+  PsvInternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: stack
+          Value: psv
+  PsvInternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref PsvInternetGateway
+      VpcId: !Ref PsvVPC
+
+###############     Public Subnets     ###############
+  PsvPublicSubnetOne:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref PsvVPC
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      CidrBlock: 10.0.4.0/24
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [!Ref "AWS::StackName", "public-subnet-one"]]
+  PsvPublicSubnetTwo:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref PsvVPC
+      AvailabilityZone: !Select [ 1, !GetAZs  '' ]
+      CidrBlock: 10.0.5.0/24
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [!Ref "AWS::StackName", "public-subnet-two"]]
+
+###############     Private Subnets     ###############
+  PsvPrivateSubnetOne:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: 10.0.3.0/24
+      VpcId: !Ref PsvVPC
+      AvailabilityZone:
+        Fn::Select:
+          - 0
+          - Fn::GetAZs: ""
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [!Ref "AWS::StackName", "private-subnet-one"]]
+  PsvPrivateSubnetTwo:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: 10.0.2.0/24
+      VpcId: !Ref PsvVPC
+      AvailabilityZone:
+        Fn::Select:
+          - 1
+          - Fn::GetAZs: ""
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [!Ref "AWS::StackName", "private-subnet-two"]]
+ ###############     NAT           ###############
+  NatGateway1EIP:
+    Type: AWS::EC2::EIP
+    DependsOn: PsvInternetGatewayAttachment
+    Properties:
+      Domain: vpc
+  NatGateway2EIP:
+    Type: AWS::EC2::EIP
+    DependsOn: PsvInternetGatewayAttachment
+    Properties:
+      Domain: vpc
+  NatGateway1:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatGateway1EIP.AllocationId
+      SubnetId: !Ref PsvPublicSubnetOne
+  NatGateway2:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatGateway2EIP.AllocationId
+      SubnetId: !Ref PsvPublicSubnetTwo
+
+###############     Public Routing     ###############
+  PsvPublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref PsvVPC
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [!Ref "AWS::StackName", "public-routes"]]
+  DefaultPublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: PsvInternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PsvPublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref PsvInternetGateway
+  PublicSubnetOneRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PsvPublicRouteTable
+      SubnetId: !Ref PsvPublicSubnetOne
+  PublicSubnetTwoRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PsvPublicRouteTable
+      SubnetId: !Ref PsvPublicSubnetTwo
+
+###############     Private Routing     ###############
+  PsvPrivateRouteTableOne:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref PsvVPC
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [!Ref "AWS::StackName", "private-routes-1"]]
+  DefaultPrivateRouteOne:
+    Type: AWS::EC2::Route
+    DependsOn: NatGateway1
+    Properties:
+      RouteTableId: !Ref PsvPrivateRouteTableOne
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway1
+  PsvPrivateRouteTableTwo:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref PsvVPC
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [!Ref "AWS::StackName", "private-routes-2"]]
+  DefaultPrivateRouteTwo:
+    Type: AWS::EC2::Route
+    DependsOn: NatGateway2
+    Properties:
+      RouteTableId: !Ref PsvPrivateRouteTableTwo
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway2
+      
+  PsvPrivateSubnetOneRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PsvPrivateSubnetOne
+      RouteTableId: !Ref PsvPrivateRouteTableOne
+  PsvPrivateSubnetTwoRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PsvPrivateSubnetTwo
+      RouteTableId: !Ref PsvPrivateRouteTableTwo
+
+###############       EFS          ###############
+  EfsFileSystem:
+    Type: "AWS::EFS::FileSystem"
+  EfsMountTarget1:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref EfsFileSystem
+      SubnetId: !Ref PsvPrivateSubnetOne
+      SecurityGroups:
+        - !GetAtt PsvVPC.DefaultSecurityGroup
+  EfsMountTarget2:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref EfsFileSystem
+      SubnetId: !Ref PsvPrivateSubnetTwo
+      SecurityGroups:
+        - !GetAtt PsvVPC.DefaultSecurityGroup
+  EfsAccessPoint:
+    Type: AWS::EFS::AccessPoint
+    Properties:
+      FileSystemId: !Ref EfsFileSystem
+      PosixUser:
+        Uid: "1001"
+        Gid: "1001"
+      RootDirectory:
+        CreationInfo:
+          OwnerGid: "1001"
+          OwnerUid: "1001"
+          Permissions: "755"
+        Path: "/efs-nodejs-storage"
+
+###############       Outputs          ###############
+Outputs:
+  PsvVPC:
+    Description: A reference to the psv VPC
+    Value: !Ref PsvVPC
+  PsvPublicSubnets:
+    Description: A list of the public subnets
+    Value: !Join [ ",", [ !Ref PsvPublicSubnetOne, !Ref PsvPublicSubnetTwo ]]
+  PsvPrivateSubnets:
+    Description: A list of the private subnets
+    Value: !Join [ ",", [ !Ref PsvPrivateSubnetTwo, !Ref PsvPrivateSubnetTwo ]]
+  PsvPrivateSubnetOne:
+    Description: "The PsvPrivateSubnetOne resource"
+    Value: !Ref PsvPrivateSubnetOne
+    Export:
+      Name: "PsvPrivateSubnetOne"
+  PsvPrivateSubnetTwo:
+    Description: "The PsvPrivateSubnetTwo resource"
+    Value: !Ref PsvPrivateSubnetTwo
+    Export:
+      Name: "PsvPrivateSubnetTwo"
+  PsvPrivateSecurityGroup:
+    Description: "The PsvPrivateSecurityGroup resource"
+    Value: !GetAtt PsvVPC.DefaultSecurityGroup
+    Export:
+      Name: "PsvPrivateSecurityGroup"
+  EfsFileSystemResourceId:
+    Description: File system ID
+    Value: !Ref EfsFileSystem
+    Export:
+      Name: "EfsFileSystemResourceId"
+  EfsMountTarget1:
+    Description: Mount point A ID
+    Value: !Ref EfsMountTarget1
+    Export:
+      Name: "EfsMountTarget1"
+  EfsMountTarget2:
+    Description: Mount point B ID
+    Value: !Ref EfsMountTarget2
+    Export:
+      Name: "EfsMountTarget2"
+  EfsAccessPointArn:
+    Description: Access point ARN
+    Value: !GetAtt EfsAccessPoint.Arn
+    Export:
+      Name: "EfsAccessPointArn"

@@ -1,0 +1,26 @@
+{
+  "name": "grant-doc-retriever",
+  "version": "1.0.0",
+  "description": "grant-doc-retriever",
+  "main": "app.js",
+  "repository": "https://github.com/patent-analysis/uspto-doc-retriever",
+  "author": "PSV",
+  "license": "MIT",
+  "dependencies": {
+    "aws-sdk": "^2.875.0",
+    "axios": "^0.21.1",
+    "extract-zip": "^2.0.1",
+    "moment": "^2.29.1",
+    "xml-js": "^1.6.11"
+  },
+  "scripts": {
+    "lint": "./node_modules/.bin/eslint *.js",
+    "test": "node ./node_modules/mocha/bin/mocha ./tests/unit/*.js"
+  },
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "eslint": "^7.23.0",
+    "mocha": "^8.2.1",
+    "sinon": "^10.0.0"
+  }
+}

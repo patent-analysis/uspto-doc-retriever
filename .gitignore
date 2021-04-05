@@ -127,3 +127,14 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# vscode
+.vscode/*
+
+# local documents
+**/tmp/docs/*
+**/tmp/seq/*
+**/tmp/*
+
+
+doc-retriever/.aws-sam/build.toml

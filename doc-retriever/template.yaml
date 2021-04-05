@@ -1,0 +1,171 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  USPTO grant and application bulk document retriever SAM stack
+
+Globals:
+  Function:
+    Timeout: 900
+
+Parameters:
+  AwsRegion:
+    Type: String
+    Description: The AWS Region.
+  NodeEnv:
+    Type: String
+    Description: The nodejs Environment.
+  EFSpath:
+    Type: String
+    Default: "/mnt/efs0"
+
+Resources:
+  GrantDocRetrieverFunction:
+    Type: AWS::Serverless::Function
+    Handler: ./grant-doc-retriever/app.lambdaHandler
+    Timeout: 900
+    Properties:
+      CodeUri: ./
+      Description: Process the USPTO bulk grant files
+      PackageType: Image
+      MemorySize: 10240
+      Tracing: Active
+      ImageUri:
+        !Join [
+          ".",
+          [
+            !Ref AWS::AccountId,
+            "dkr.ecr",
+            !Ref AWS::Region,
+            "amazonaws.com/",
+            !Ref DocRetrieverRepo,
+          ],
+        ]
+      Environment:
+        Variables:
+          PSV_AWS_REGION: !Ref AwsRegion
+          EFS_PATH: !Ref EFSpath
+          NODE_ENV: !Ref NodeEnv
+      Events:
+        DocRetrieverEvent:
+          Type: Api
+          Properties:
+            Path: grant/retrieve
+            Method: post
+        InvocationLevel:
+          Type: Schedule
+          Properties:
+            Schedule: cron(59 23 ? * 3 *)
+      FileSystemConfigs:
+        - LocalMountPath: !Ref EFSpath
+          Arn:
+            Fn::ImportValue: EfsAccessPointArn
+      VpcConfig:
+        SecurityGroupIds:
+          - Fn::ImportValue: "PsvPrivateSecurityGroup"
+        SubnetIds:
+          - Fn::ImportValue: "PsvPrivateSubnetOne"
+          - Fn::ImportValue: "PsvPrivateSubnetTwo"
+      Policies:
+        - AWSXRayDaemonWriteAccess
+        - AWSLambdaVPCAccessExecutionRole
+        - AmazonElasticFileSystemClientReadWriteAccess
+        - AmazonS3FullAccess
+
+    Metadata:
+      DockerTag: grant-doc-retriever
+      DockerContext: ./
+      Dockerfile: ./grant-doc-retriever/Dockerfile
+
+  AppDocRetrieverFunction:
+    Type: AWS::Serverless::Function
+    Handler: app.lambdaHandler
+    CodeUri: ./application-doc-retriever
+    Timeout: 900
+    Properties:
+      CodeUri: ./
+      Description: Process the USPTO bulk patent application files
+      PackageType: Image
+      MemorySize: 10240
+      Tracing: Active
+      ImageUri:
+        !Join [
+          ".",
+          [
+            !Ref AWS::AccountId,
+            "dkr.ecr",
+            !Ref AWS::Region,
+            "amazonaws.com/",
+            !Ref DocRetrieverRepo,
+          ],
+        ]
+      Environment:
+        Variables:
+          PSV_AWS_REGION: !Ref AwsRegion
+          EFS_PATH: !Ref EFSpath
+          NODE_ENV: !Ref NodeEnv
+      Events:
+        DocRetrieverEvent:
+          Type: Api
+          Properties:
+            Path: app/retrieve
+            Method: post
+        InvocationLevel:
+          Type: Schedule
+          Properties:
+            Schedule: cron(59 23 ? * 5 *)
+      FileSystemConfigs:
+        - LocalMountPath: !Ref EFSpath
+          Arn:
+            Fn::ImportValue: EfsAccessPointArn
+      VpcConfig:
+        SecurityGroupIds:
+          - Fn::ImportValue: "PsvPrivateSecurityGroup"
+        SubnetIds:
+          - Fn::ImportValue: "PsvPrivateSubnetOne"
+          - Fn::ImportValue: "PsvPrivateSubnetTwo"
+      Policies:
+        - AWSXRayDaemonWriteAccess
+        - AWSLambdaVPCAccessExecutionRole
+        - AmazonElasticFileSystemClientReadWriteAccess
+        - AmazonS3FullAccess
+    Metadata:
+      DockerTag: app-doc-retriever
+      DockerContext: ./
+      Dockerfile: ./application-doc-retriever/Dockerfile
+
+  ConfigGrantDocRetrieverPermission:
+    Type: "AWS::Lambda::Permission"
+    DependsOn:
+    - GrantDocRetrieverFunction
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref GrantDocRetrieverFunction
+      Principal: apigateway.amazonaws.com
+  ConfigAppDocRetrieverPermission:
+    Type: "AWS::Lambda::Permission"
+    DependsOn:
+    - AppDocRetrieverFunction
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref AppDocRetrieverFunction
+      Principal: apigateway.amazonaws.com    
+
+Outputs:
+  GrantDocRetrieverApi:
+    Description: "API Gateway endpoint URL for Prod stage for GrantDocRetrieverApi function"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/grant/retrieve/"
+  GrantDocRetrieverFunction:
+    Description: "DocRetriever Lambda Function ARN"
+    Value: !GetAtt GrantDocRetrieverFunction.Arn
+  GrantDocRetrieverFunctionIamRole:
+    Description: "Implicit IAM Role created for DocRetriever function"
+    Value: !GetAtt GrantDocRetrieverFunctionRole.Arn
+  ApplicationDocRetrieverApi:
+    Description: "API Gateway endpoint URL for Prod stage for ApplicationDocRetrieverApi function"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/app/retrieve/"
+  AppDocRetrieverFunction:
+    Description: "DocRetriever Lambda Function ARN"
+    Value: !GetAtt AppDocRetrieverFunction.Arn
+  AppDocRetrieverFunctionIamRole:
+    Description: "Implicit IAM Role created for DocRetriever function"
+    Value: !GetAtt AppDocRetrieverFunctionRole.Arn

@@ -1,0 +1,89 @@
+name: CI/CD Workflow
+
+on:
+  push:
+      branches: 
+        - '*'
+        - '!main'
+  pull_request:
+      types: [opened, closed]
+      branches:
+        - '*'
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: doc-retriever
+
+jobs:
+  build:
+    name: build step
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up node 14
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+      - name: Install dependencies
+        working-directory: ./
+        run: make install
+      - name: Lint code
+        working-directory: ./
+        run: make lint
+      - name: Unit Tests
+        working-directory: ./
+        run: make test
+
+  deploy:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    name: deploy step
+    if: github.event.pull_request.merged
+    needs: build                        
+    environment: AWS_US_EAST_1_1
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up node 14
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+      - name: Install dependencies
+        run: make install
+        working-directory: ./
+      - name: Unit Tests
+        working-directory: ./
+        run: make test
+      - name: Configure AWS credentials
+        id: credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      - name: Cloudformation deploy
+        uses: aws-actions/aws-cloudformation-github-deploy@v1
+        with:
+          name: uspto-psv-stack
+          template: doc-retriever/stack-template.yaml
+          no-fail-on-empty-changeset: "1"
+        env:
+          GITHUB_WORKSPACE: ${{ github.workspace }}/doc-retriever
+      - name: SAM build
+        uses: youyo/aws-sam-action/python3.8@v2
+        with:
+          sam_command: "build --cached --parallel -t ./doc-retriever/template.yaml"
+      - name: SAM package
+        uses: youyo/aws-sam-action/python3.8@v2
+        with:
+          sam_command: "package --output-template-file ./doc-retriever/packaged-template.yaml --debug --region us-east-1 --image-repository 134442622645.dkr.ecr.us-east-1.amazonaws.com/uspto-doc-retriever-ecr --s3-bucket uspto-psv-sam-stack-bucket" 
+      - name: SAM deploy
+        uses: youyo/aws-sam-action/python3.8@v2
+        with:
+          sam_command: 'deploy -t ./doc-retriever/packaged-template.yaml --stack-name uspto-psv-sam-stack --region us-east-1 --debug --image-repository 134442622645.dkr.ecr.us-east-1.amazonaws.com/uspto-doc-retriever-ecr --s3-bucket uspto-psv-sam-stack-bucket --capabilities CAPABILITY_IAM  --no-fail-on-empty-changeset --parameter-overrides "ParameterKey=NodeEnv,ParameterValue=prod ParameterKey=AwsRegion,ParameterValue=us-east-1"'
+          actions_comment: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-east-1
