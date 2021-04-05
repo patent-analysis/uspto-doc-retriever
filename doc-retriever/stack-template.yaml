@@ -43,13 +43,13 @@ Resources:
     Type: "AWS::S3::BucketPolicy"
     Properties:
       Bucket: uspto-documents-storage
-      LifecycleConfiguration:
-        Rules:
-          - Id: TransitionRule
-            Prefix: intelligent
-            Status: Enabled
-            Transitions:
-                StorageClass: INTELLIGENT_TIERING 
+      # LifecycleConfiguration:
+      #   Rules:
+      #     - Id: TransitionRule
+      #       Prefix: intelligent
+      #       Status: Enabled
+      #       Transitions:
+      #           StorageClass: INTELLIGENT_TIERING 
       PolicyDocument:
         Statement:
           - Sid: PublicRead
