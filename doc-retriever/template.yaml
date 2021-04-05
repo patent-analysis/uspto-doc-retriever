@@ -128,11 +128,27 @@ Resources:
         - AWSLambdaVPCAccessExecutionRole
         - AmazonElasticFileSystemClientReadWriteAccess
         - AmazonS3FullAccess
-
     Metadata:
       DockerTag: app-doc-retriever
       DockerContext: ./
       Dockerfile: ./application-doc-retriever/Dockerfile
+
+  ConfigGrantDocRetrieverPermission:
+    Type: "AWS::Lambda::Permission"
+    DependsOn:
+    - GrantDocRetrieverFunction
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref GrantDocRetrieverFunction
+      Principal: apigateway.amazonaws.com
+  ConfigAppDocRetrieverPermission:
+    Type: "AWS::Lambda::Permission"
+    DependsOn:
+    - AppDocRetrieverFunction
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref AppDocRetrieverFunction
+      Principal: apigateway.amazonaws.com    
 
 Outputs:
   GrantDocRetrieverApi:
