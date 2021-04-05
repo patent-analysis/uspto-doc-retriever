@@ -59,7 +59,6 @@ async function processXmlFile(xmlFileName) {
     let extractedDocsCount = 0;
     let skippedDocsCount = 0;
     let extractedSeqDocsCount = 0;
-    // TODO: UPDATE THIS SECTION TO LOOK AT APPLICATION'S data
     for await (const line of readInterface) {
         linesCount++;
         if (line.startsWith('<?xml version=') && xmlString != '') {
