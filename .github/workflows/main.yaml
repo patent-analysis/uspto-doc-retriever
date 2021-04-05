@@ -39,8 +39,8 @@ jobs:
     timeout-minutes: 10
     runs-on: ubuntu-latest
     name: deploy step
-    # if: github.event.pull_request.merged
-    # needs: build                        
+    if: github.event.pull_request.merged
+    needs: build                        
     environment: AWS_US_EAST_1_1
     steps:
       - uses: actions/checkout@v2
