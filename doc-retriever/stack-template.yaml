@@ -236,14 +236,14 @@ Resources:
 ###############       EFS          ###############
   EfsFileSystem:
     Type: "AWS::EFS::FileSystem"
-  EfsMountTarget1:
+  EfsMountTarget3:
     Type: AWS::EFS::MountTarget
     Properties:
       FileSystemId: !Ref EfsFileSystem
       SubnetId: !Ref PsvPrivateSubnetOne
       SecurityGroups:
         - !GetAtt PsvVPC.DefaultSecurityGroup
-  EfsMountTarget2:
+  EfsMountTarget4:
     Type: AWS::EFS::MountTarget
     Properties:
       FileSystemId: !Ref EfsFileSystem
@@ -295,16 +295,16 @@ Outputs:
     Value: !Ref EfsFileSystem
     Export:
       Name: "EfsFileSystemResourceId"
-  EfsMountTarget1:
+  EfsMountTarget3:
     Description: Mount point A ID
-    Value: !Ref EfsMountTarget1
+    Value: !Ref EfsMountTarget3
     Export:
-      Name: "EfsMountTarget1"
-  EfsMountTarget2:
+      Name: "EfsMountTarget3"
+  EfsMountTarget4:
     Description: Mount point B ID
-    Value: !Ref EfsMountTarget2
+    Value: !Ref EfsMountTarget4
     Export:
-      Name: "EfsMountTarget2"
+      Name: "EfsMountTarget4"
   EfsAccessPointArn:
     Description: Access point ARN
     Value: !GetAtt EfsAccessPoint.Arn
