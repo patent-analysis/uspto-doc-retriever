@@ -362,4 +362,4 @@ Outputs:
     Description: Access point 2 ARN
     Value: !GetAtt EfsAccessPoint2.Arn
     Export:
-      Name: "EfsAccessPointArn"     
+      Name: "EfsAccessPoint2Arn"     
