@@ -332,7 +332,7 @@ Outputs:
     Description: File system 2 ID
     Value: !Ref EfsFileSystem2
     Export:
-      Name: "EfsFileSystemResourceId"    
+      Name: "EfsFileSystem2ResourceId"    
   EfsMountTarget1:
     Description: Mount point A ID
     Value: !Ref EfsMountTarget1
@@ -352,7 +352,7 @@ Outputs:
     Description: Mount point B ID
     Value: !Ref EfsMountTarget4
     Export:
-      Name: "EfsMountTarget2"
+      Name: "EfsMountTarget4"
   EfsAccessPointArn:
     Description: Access point ARN
     Value: !GetAtt EfsAccessPoint.Arn
