@@ -264,6 +264,39 @@ Resources:
           Permissions: "755"
         Path: "/efs-nodejs-storage"
 
+###############       EFS 2         ###############
+  EfsFileSystem2:
+    Type: "AWS::EFS::FileSystem"
+  EfsMountTarget3:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref EfsFileSystem2
+      SubnetId: !Ref PsvPrivateSubnetOne
+      SecurityGroups:
+        - !GetAtt PsvVPC.DefaultSecurityGroup
+  EfsMountTarget4:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref EfsFileSystem2
+      SubnetId: !Ref PsvPrivateSubnetTwo
+      SecurityGroups:
+        - !GetAtt PsvVPC.DefaultSecurityGroup
+  EfsAccessPoint2:
+    Type: AWS::EFS::AccessPoint
+    Properties:
+      FileSystemId: !Ref EfsFileSystem2
+      PosixUser:
+        Uid: "1001"
+        Gid: "1001"
+      RootDirectory:
+        CreationInfo:
+          OwnerGid: "1001"
+          OwnerUid: "1001"
+          Permissions: "755"
+        Path: "/efs-nodejs-storage"
+
+
+
 ###############       Outputs          ###############
 Outputs:
   PsvVPC:
@@ -295,6 +328,11 @@ Outputs:
     Value: !Ref EfsFileSystem
     Export:
       Name: "EfsFileSystemResourceId"
+  EfsFileSystem2ResourceId:
+    Description: File system 2 ID
+    Value: !Ref EfsFileSystem2
+    Export:
+      Name: "EfsFileSystemResourceId"    
   EfsMountTarget1:
     Description: Mount point A ID
     Value: !Ref EfsMountTarget1
@@ -305,8 +343,23 @@ Outputs:
     Value: !Ref EfsMountTarget2
     Export:
       Name: "EfsMountTarget2"
+  EfsMountTarget3:
+    Description: Mount point A ID
+    Value: !Ref EfsMountTarget3
+    Export:
+      Name: "EfsMountTarget3"
+  EfsMountTarget4:
+    Description: Mount point B ID
+    Value: !Ref EfsMountTarget4
+    Export:
+      Name: "EfsMountTarget2"
   EfsAccessPointArn:
     Description: Access point ARN
     Value: !GetAtt EfsAccessPoint.Arn
     Export:
       Name: "EfsAccessPointArn"
+  EfsAccessPoint2Arn:
+    Description: Access point 2 ARN
+    Value: !GetAtt EfsAccessPoint2.Arn
+    Export:
+      Name: "EfsAccessPointArn"     
