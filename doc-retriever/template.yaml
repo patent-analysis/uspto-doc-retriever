@@ -58,7 +58,7 @@ Resources:
       FileSystemConfigs:
         - LocalMountPath: !Ref EFSpath
           Arn:
-            Fn::ImportValue: EfsAccessPointArn
+            Fn::ImportValue: EfsAccessPoint2Arn
       VpcConfig:
         SecurityGroupIds:
           - Fn::ImportValue: "PsvPrivateSecurityGroup"
